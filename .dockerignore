@@ -1,0 +1,5 @@
+node_modules
+data
+.git
+*.md
+task-configs.storage

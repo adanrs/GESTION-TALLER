@@ -1,0 +1,103 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-car-front"></i> <%= vehiculo.placa %> - <%= vehiculo.marca %> <%= vehiculo.modelo %></h2>
+  <div>
+    <a href="/vehiculos/<%= vehiculo.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+    <a href="/clientes/<%= vehiculo.cliente_id %>" class="btn btn-outline-secondary">Ver Cliente</a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-2"><strong>Placa:</strong> <%= vehiculo.placa %></div>
+      <div class="col-md-2"><strong>Marca:</strong> <%= vehiculo.marca %></div>
+      <div class="col-md-2"><strong>Modelo:</strong> <%= vehiculo.modelo %></div>
+      <div class="col-md-2"><strong>Ano:</strong> <%= vehiculo.ano || '-' %></div>
+      <div class="col-md-2"><strong>Color:</strong> <%= vehiculo.color || '-' %></div>
+      <div class="col-md-2"><strong>Propietario:</strong> <a href="/clientes/<%= vehiculo.cliente_id %>"><%= vehiculo.cliente_nombre %></a></div>
+    </div>
+    <% if (vehiculo.vin) { %><div class="mt-2"><strong>VIN:</strong> <%= vehiculo.vin %></div><% } %>
+  </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#servicios">Historial de Servicios (<%= servicios.length %>)</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cotizaciones">Cotizaciones (<%= cotizaciones.length %>)</a></li>
+</ul>
+
+<div class="tab-content">
+  <!-- Servicios -->
+  <div class="tab-pane fade show active" id="servicios">
+    <div class="mb-2">
+      <a href="/servicios/crear?vehiculo_id=<%= vehiculo.id %>" class="btn btn-sm btn-success"><i class="bi bi-plus-lg"></i> Nuevo Servicio</a>
+    </div>
+    <% if (servicios.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr><th>Fecha</th><th>Descripcion</th><th>Km</th><th>Tecnico</th><th>Costo</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% servicios.forEach(s => { %>
+          <tr>
+            <td><%= s.fecha ? s.fecha.substring(0, 10) : '' %></td>
+            <td><%= s.descripcion %></td>
+            <td><%= s.kilometraje || '-' %></td>
+            <td><%= s.tecnico || '-' %></td>
+            <td>$<%= (s.costo || 0).toFixed(2) %></td>
+            <td>
+              <% if (s.estado === 'Completado') { %>
+                <span class="badge bg-success"><%= s.estado %></span>
+              <% } else if (s.estado === 'En Proceso') { %>
+                <span class="badge bg-warning text-dark"><%= s.estado %></span>
+              <% } else if (s.estado === 'Cancelado') { %>
+                <span class="badge bg-danger"><%= s.estado %></span>
+              <% } else { %>
+                <span class="badge bg-secondary"><%= s.estado %></span>
+              <% } %>
+            </td>
+            <td><a href="/servicios/<%= s.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <p class="text-muted">No hay servicios registrados para este vehiculo.</p>
+    <% } %>
+  </div>
+
+  <!-- Cotizaciones -->
+  <div class="tab-pane fade" id="cotizaciones">
+    <div class="mb-2">
+      <a href="/cotizaciones/crear?vehiculo_id=<%= vehiculo.id %>" class="btn btn-sm btn-success"><i class="bi bi-plus-lg"></i> Nueva Cotizacion</a>
+    </div>
+    <% if (cotizaciones.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr><th>Numero</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% cotizaciones.forEach(c => { %>
+          <tr>
+            <td><a href="/cotizaciones/<%= c.id %>"><%= c.numero %></a></td>
+            <td><%= c.fecha ? c.fecha.substring(0, 10) : '' %></td>
+            <td>$<%= (c.total || 0).toFixed(2) %></td>
+            <td><span class="badge bg-<%= c.estado === 'Aprobada' ? 'success' : c.estado === 'Rechazada' ? 'danger' : 'secondary' %>"><%= c.estado %></span></td>
+            <td><a href="/cotizaciones/<%= c.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <p class="text-muted">No hay cotizaciones para este vehiculo.</p>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,73 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-receipt"></i> Cotizaciones</h2>
+  <a href="/cotizaciones/crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva Cotizacion</a>
+</div>
+
+<form class="row g-2 mb-3" method="GET">
+  <div class="col-auto flex-grow-1">
+    <input type="text" name="buscar" class="form-control" placeholder="Buscar por numero, placa o cliente..." value="<%= buscar %>">
+  </div>
+  <div class="col-auto">
+    <select name="estado" class="form-select">
+      <option value="">Todos los estados</option>
+      <% ['Borrador','Enviada','Aprobada','Rechazada'].forEach(e => { %>
+      <option value="<%= e %>" <%= estado === e ? 'selected' : '' %>><%= e %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i> Filtrar</button>
+  </div>
+  <% if (buscar || estado) { %>
+  <div class="col-auto"><a href="/cotizaciones" class="btn btn-outline-danger">Limpiar</a></div>
+  <% } %>
+</form>
+
+<div class="card">
+  <div class="card-body p-0">
+    <% if (cotizaciones.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Numero</th>
+            <th>Fecha</th>
+            <th>Vehiculo</th>
+            <th>Cliente</th>
+            <th class="text-end">Total</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% cotizaciones.forEach(c => { %>
+          <tr>
+            <td><a href="/cotizaciones/<%= c.id %>"><strong><%= c.numero %></strong></a></td>
+            <td><%= c.fecha ? c.fecha.substring(0, 10) : '' %></td>
+            <td><%= c.placa %> <%= c.marca %> <%= c.modelo %></td>
+            <td><%= c.cliente_nombre %></td>
+            <td class="text-end"><strong><%- simboloMoneda(c.moneda || 'USD') %><%= (c.total || 0).toFixed(2) %></strong></td>
+            <td>
+              <span class="badge bg-<%= c.estado === 'Aprobada' ? 'success' : c.estado === 'Rechazada' ? 'danger' : c.estado === 'Enviada' ? 'info' : 'secondary' %>"><%= c.estado %></span>
+            </td>
+            <td class="text-end">
+              <a href="/cotizaciones/<%= c.id %>" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+              <a href="/cotizaciones/<%= c.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <form method="POST" action="/cotizaciones/<%= c.id %>/eliminar" class="d-inline" onsubmit="return confirm('Eliminar esta cotizacion?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <p class="text-muted p-3 mb-0">No se encontraron cotizaciones.</p>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

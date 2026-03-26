@@ -1,0 +1,44 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-people-fill"></i> Usuarios</h2>
+  <a href="/usuarios/crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo Usuario</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Registro</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% usuarios.forEach(u => { %>
+          <tr>
+            <td><%= u.nombre %></td>
+            <td><code><%= u.usuario %></code></td>
+            <td><span class="badge bg-<%= u.rol === 'admin' ? 'danger' : 'primary' %>"><%= u.rol %></span></td>
+            <td><span class="badge bg-<%= u.activo ? 'success' : 'secondary' %>"><%= u.activo ? 'Activo' : 'Inactivo' %></span></td>
+            <td><%= u.fecha_registro ? u.fecha_registro.substring(0, 10) : '' %></td>
+            <td class="text-end">
+              <a href="/usuarios/<%= u.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <form method="POST" action="/usuarios/<%= u.id %>/eliminar" class="d-inline" onsubmit="return confirm('Eliminar este usuario?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,69 @@
+<%- include('../partials/header') %>
+
+<h2><i class="bi bi-gear"></i> Configuracion del Taller</h2>
+<hr>
+
+<form method="POST" action="/configuracion" style="max-width: 700px;">
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-building"></i> Datos del Taller</h5></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nombre del Taller</label>
+          <input type="text" name="nombre_taller" class="form-control" value="<%= config.nombre_taller || '' %>" placeholder="Mi Taller Mecanico">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Telefono</label>
+          <input type="text" name="telefono_taller" class="form-control" value="<%= config.telefono_taller || '' %>" placeholder="2222-3333">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label"><i class="bi bi-whatsapp text-success"></i> WhatsApp</label>
+          <input type="text" name="whatsapp_taller" class="form-control" value="<%= config.whatsapp_taller || '' %>" placeholder="50688881234 (con codigo de pais, sin +)">
+          <small class="text-muted">Se muestra como link clickeable en el PDF y cotizaciones.</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Correo Electronico</label>
+          <input type="email" name="email_taller" class="form-control" value="<%= config.email_taller || '' %>" placeholder="taller@ejemplo.com">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Direccion</label>
+          <input type="text" name="direccion_taller" class="form-control" value="<%= config.direccion_taller || '' %>" placeholder="San Jose, Costa Rica">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-currency-exchange"></i> Moneda e Impuestos</h5></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Moneda por defecto</label>
+          <select name="moneda" class="form-select">
+            <option value="USD" <%= (config.moneda || 'USD') === 'USD' ? 'selected' : '' %>>$ Dolares (USD)</option>
+            <option value="CRC" <%= config.moneda === 'CRC' ? 'selected' : '' %>>&#8353; Colones (CRC)</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tipo de Cambio (CRC por 1 USD)</label>
+          <input type="number" name="tipo_cambio_crc" class="form-control" step="0.01" min="0" value="<%= config.tipo_cambio_crc || '515' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">IVA (%)</label>
+          <input type="number" name="iva_porcentaje" class="form-control" step="0.01" min="0" max="100" value="<%= config.iva_porcentaje || '13' %>">
+        </div>
+        <div class="col-12">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="aplica_iva" id="aplica_iva" <%= (config.aplica_iva === undefined || config.aplica_iva === '1') ? 'checked' : '' %>>
+            <label class="form-check-label" for="aplica_iva">Aplicar IVA por defecto en cotizaciones</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar Configuracion</button>
+  <a href="/" class="btn btn-outline-secondary">Cancelar</a>
+</form>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,99 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-receipt"></i> Cotizacion <%= cotizacion.numero %></h2>
+  <div class="d-print-none">
+    <a href="/cotizaciones/<%= cotizacion.id %>/pdf" target="_blank" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    <% if (whatsapp) { %>
+    <a href="https://wa.me/<%= whatsapp %>?text=Hola,%20le%20envio%20la%20cotizacion%20<%= cotizacion.numero %>" target="_blank" class="btn btn-success"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+    <% } %>
+    <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> Imprimir</button>
+    <a href="/cotizaciones/<%= cotizacion.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+    <a href="/cotizaciones" class="btn btn-outline-secondary">Volver</a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <h5>Datos del Cliente</h5>
+        <p class="mb-1"><strong><%= cotizacion.cliente_nombre %></strong></p>
+        <% if (cotizacion.cedula) { %><p class="mb-1">Cedula/RIF: <%= cotizacion.cedula %></p><% } %>
+        <% if (cotizacion.telefono) { %><p class="mb-1">Tel: <%= cotizacion.telefono %></p><% } %>
+        <% if (cotizacion.email) { %><p class="mb-1"><%= cotizacion.email %></p><% } %>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <h5>Cotizacion</h5>
+        <p class="mb-1"><strong>No:</strong> <%= cotizacion.numero %></p>
+        <p class="mb-1"><strong>Fecha:</strong> <%= cotizacion.fecha ? cotizacion.fecha.substring(0, 10) : '' %></p>
+        <p class="mb-1"><strong>Moneda:</strong> <%= (cotizacion.moneda || 'USD') === 'CRC' ? 'Colones (CRC)' : 'Dolares (USD)' %></p>
+        <p class="mb-1"><strong>Estado:</strong>
+          <span class="badge bg-<%= cotizacion.estado === 'Aprobada' ? 'success' : cotizacion.estado === 'Rechazada' ? 'danger' : cotizacion.estado === 'Enviada' ? 'info' : 'secondary' %>"><%= cotizacion.estado %></span>
+        </p>
+      </div>
+    </div>
+    <hr>
+    <div class="mb-3">
+      <strong>Vehiculo:</strong> <%= cotizacion.placa %> - <%= cotizacion.marca %> <%= cotizacion.modelo %>
+      <% if(cotizacion.ano) { %> (<%= cotizacion.ano %>)<% } %>
+      <% if(cotizacion.color) { %> - <%= cotizacion.color %><% } %>
+      <% if(cotizacion.vin) { %> | VIN: <%= cotizacion.vin %><% } %>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Tipo</th>
+            <th>Descripcion</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-end">Precio Unit.</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% detalles.forEach((d, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td><span class="badge bg-<%= d.tipo === 'Servicio' ? 'info' : 'warning' %>"><%= d.tipo %></span></td>
+            <td><%= d.descripcion %></td>
+            <td class="text-center"><%= d.cantidad %></td>
+            <td class="text-end"><%- simbolo %><%= d.precio_unitario.toFixed(2) %></td>
+            <td class="text-end"><%- simbolo %><%= (d.cantidad * d.precio_unitario).toFixed(2) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
+            <td class="text-end"><strong><%- simbolo %><%= subtotal.toFixed(2) %></strong></td>
+          </tr>
+          <% if (cotizacion.aplica_iva) { %>
+          <tr>
+            <td colspan="5" class="text-end"><strong>IVA (<%= cotizacion.iva_porcentaje %>%):</strong></td>
+            <td class="text-end"><strong><%- simbolo %><%= iva.toFixed(2) %></strong></td>
+          </tr>
+          <% } %>
+          <tr class="table-dark">
+            <td colspan="5" class="text-end"><strong>TOTAL:</strong></td>
+            <td class="text-end fs-5"><strong><%- simbolo %><%= total.toFixed(2) %></strong></td>
+          </tr>
+          <% if (tc > 0) { %>
+          <tr>
+            <td colspan="5" class="text-end text-muted">Equivalente en <%= monedaAlterna %> (T.C. <%= tc %>):</td>
+            <td class="text-end text-muted"><%- simboloAlt %><%= totalConvertido.toFixed(2) %></td>
+          </tr>
+          <% } %>
+        </tfoot>
+      </table>
+    </div>
+
+    <% if (cotizacion.notas) { %>
+    <div class="mt-3"><strong>Notas:</strong> <%= cotizacion.notas %></div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

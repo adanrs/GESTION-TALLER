@@ -1,0 +1,41 @@
+<%- include('../partials/header') %>
+
+<h2><i class="bi bi-person"></i> <%= title %></h2>
+<hr>
+
+<% if (errors.length) { %>
+<div class="alert alert-danger">
+  <ul class="mb-0"><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul>
+</div>
+<% } %>
+
+<form method="POST" action="/clientes<%= cliente.id ? `/${cliente.id}/editar` : '/crear' %>">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Nombre Completo *</label>
+      <input type="text" name="nombre" class="form-control" value="<%= cliente.nombre || '' %>" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Cedula / RIF</label>
+      <input type="text" name="cedula" class="form-control" value="<%= cliente.cedula || '' %>">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Telefono</label>
+      <input type="text" name="telefono" class="form-control" value="<%= cliente.telefono || '' %>">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Correo Electronico</label>
+      <input type="email" name="email" class="form-control" value="<%= cliente.email || '' %>">
+    </div>
+    <div class="col-12">
+      <label class="form-label">Direccion</label>
+      <input type="text" name="direccion" class="form-control" value="<%= cliente.direccion || '' %>">
+    </div>
+  </div>
+  <div class="mt-4">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+    <a href="/clientes" class="btn btn-outline-secondary">Cancelar</a>
+  </div>
+</form>
+
+<%- include('../partials/footer') %>

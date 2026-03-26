@@ -1,0 +1,94 @@
+<%- include('partials/header') %>
+
+<h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-white bg-primary h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-people fs-1"></i>
+        <h3 class="mt-2"><%= totalClientes %></h3>
+        <p class="mb-0">Clientes</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-white bg-success h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-car-front fs-1"></i>
+        <h3 class="mt-2"><%= totalVehiculos %></h3>
+        <p class="mb-0">Vehiculos</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-white bg-warning h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-tools fs-1"></i>
+        <h3 class="mt-2"><%= serviciosActivos %></h3>
+        <p class="mb-0">Servicios Activos</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-white bg-info h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-receipt fs-1"></i>
+        <h3 class="mt-2"><%= cotizacionesPendientes %></h3>
+        <p class="mb-0">Cotizaciones Pendientes</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex gap-2 mb-4">
+  <a href="/clientes/crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo Cliente</a>
+  <a href="/cotizaciones/crear" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> Nueva Cotizacion</a>
+  <a href="/servicios/crear" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> Nuevo Servicio</a>
+</div>
+
+<div class="card">
+  <div class="card-header"><h5 class="mb-0"><i class="bi bi-clock-history"></i> Servicios Recientes</h5></div>
+  <div class="card-body p-0">
+    <% if (serviciosRecientes.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Vehiculo</th>
+            <th>Cliente</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% serviciosRecientes.forEach(s => { %>
+          <tr>
+            <td><%= s.fecha ? s.fecha.substring(0, 10) : '' %></td>
+            <td><%= s.placa %> - <%= s.marca %> <%= s.modelo %></td>
+            <td><%= s.cliente_nombre %></td>
+            <td><%= s.descripcion.substring(0, 60) %></td>
+            <td>
+              <% if (s.estado === 'Completado') { %>
+                <span class="badge bg-success"><%= s.estado %></span>
+              <% } else if (s.estado === 'En Proceso') { %>
+                <span class="badge bg-warning text-dark"><%= s.estado %></span>
+              <% } else if (s.estado === 'Cancelado') { %>
+                <span class="badge bg-danger"><%= s.estado %></span>
+              <% } else { %>
+                <span class="badge bg-secondary"><%= s.estado %></span>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <p class="text-muted p-3 mb-0">No hay servicios registrados aun.</p>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

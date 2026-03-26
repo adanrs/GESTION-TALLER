@@ -1,0 +1,91 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-tools"></i> Servicio #<%= servicio.id %></h2>
+  <div>
+    <a href="/servicios/<%= servicio.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+    <a href="/vehiculos/<%= servicio.vehiculo_id %>" class="btn btn-outline-secondary">Ver Vehiculo</a>
+    <a href="/servicios" class="btn btn-outline-secondary">Volver</a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-4"><strong>Vehiculo:</strong> <a href="/vehiculos/<%= servicio.vehiculo_id %>"><%= servicio.placa %> - <%= servicio.marca %> <%= servicio.modelo %></a></div>
+      <div class="col-md-3"><strong>Cliente:</strong> <%= servicio.cliente_nombre %></div>
+      <div class="col-md-2"><strong>Fecha:</strong> <%= servicio.fecha ? servicio.fecha.substring(0, 10) : '' %></div>
+      <div class="col-md-3">
+        <strong>Estado:</strong>
+        <% if (servicio.estado === 'Completado') { %>
+          <span class="badge bg-success"><%= servicio.estado %></span>
+        <% } else if (servicio.estado === 'En Proceso') { %>
+          <span class="badge bg-warning text-dark"><%= servicio.estado %></span>
+        <% } else if (servicio.estado === 'Cancelado') { %>
+          <span class="badge bg-danger"><%= servicio.estado %></span>
+        <% } else { %>
+          <span class="badge bg-secondary"><%= servicio.estado %></span>
+        <% } %>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-6"><strong>Descripcion:</strong> <%= servicio.descripcion %></div>
+      <div class="col-md-2"><strong>Km:</strong> <%= servicio.kilometraje || '-' %></div>
+      <div class="col-md-2"><strong>Tecnico:</strong> <%= servicio.tecnico || '-' %></div>
+      <div class="col-md-2"><strong>Mano de obra:</strong> $<%= (servicio.costo || 0).toFixed(2) %></div>
+    </div>
+    <% if (servicio.notas) { %>
+    <div class="mt-2"><strong>Notas:</strong> <%= servicio.notas %></div>
+    <% } %>
+  </div>
+</div>
+
+<% if (items.length) { %>
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Repuestos / Partes</h5></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Tipo</th>
+            <th>Descripcion</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-end">Precio Unit.</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach((it, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td><span class="badge bg-<%= it.tipo === 'Servicio' ? 'info' : 'warning' %>"><%= it.tipo %></span></td>
+            <td><%= it.descripcion %></td>
+            <td class="text-center"><%= it.cantidad %></td>
+            <td class="text-end">$<%= it.precio_unitario.toFixed(2) %></td>
+            <td class="text-end">$<%= (it.cantidad * it.precio_unitario).toFixed(2) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="text-end"><strong>Total repuestos:</strong></td>
+            <td class="text-end fw-bold">$<%= totalItems.toFixed(2) %></td>
+          </tr>
+          <tr>
+            <td colspan="5" class="text-end"><strong>Mano de obra:</strong></td>
+            <td class="text-end fw-bold">$<%= (servicio.costo || 0).toFixed(2) %></td>
+          </tr>
+          <tr class="table-dark">
+            <td colspan="5" class="text-end"><strong>TOTAL SERVICIO:</strong></td>
+            <td class="text-end fw-bold fs-5">$<%= (totalItems + (servicio.costo || 0)).toFixed(2) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

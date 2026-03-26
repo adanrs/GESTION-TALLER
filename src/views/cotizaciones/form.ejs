@@ -1,0 +1,146 @@
+<%- include('../partials/header') %>
+
+<h2><i class="bi bi-receipt"></i> <%= title %></h2>
+<hr>
+
+<% if (errors.length) { %>
+<div class="alert alert-danger">
+  <ul class="mb-0"><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul>
+</div>
+<% } %>
+
+<form method="POST" action="/cotizaciones<%= cotizacion.id ? `/${cotizacion.id}/editar` : '/crear' %>">
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Vehiculo *</label>
+      <select name="vehiculo_id" class="form-select" required>
+        <option value="">-- Seleccionar vehiculo --</option>
+        <% vehiculos.forEach(v => { %>
+        <option value="<%= v.id %>" <%= String(cotizacion.vehiculo_id) === String(v.id) ? 'selected' : '' %>><%= v.placa %> - <%= v.marca %> <%= v.modelo %> (<%= v.cliente_nombre %>)</option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Moneda *</label>
+      <select name="moneda" class="form-select" id="select-moneda">
+        <option value="USD" <%= (cotizacion.moneda || 'USD') === 'USD' ? 'selected' : '' %>>$ USD</option>
+        <option value="CRC" <%= cotizacion.moneda === 'CRC' ? 'selected' : '' %>>&#8353; CRC</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">T. Cambio</label>
+      <input type="number" name="tipo_cambio" class="form-control" step="0.01" min="0" value="<%= cotizacion.tipo_cambio || 515 %>" id="input-tc">
+    </div>
+    <% if (cotizacion.id) { %>
+    <div class="col-md-2">
+      <label class="form-label">Estado</label>
+      <select name="estado" class="form-select">
+        <% ['Borrador','Enviada','Aprobada','Rechazada'].forEach(e => { %>
+        <option value="<%= e %>" <%= (cotizacion.estado || 'Borrador') === e ? 'selected' : '' %>><%= e %></option>
+        <% }) %>
+      </select>
+    </div>
+    <% } %>
+    <div class="col-md-<%= cotizacion.id ? '2' : '4' %>">
+      <label class="form-label">Notas</label>
+      <input type="text" name="notas" class="form-control" value="<%= cotizacion.notas || '' %>">
+    </div>
+  </div>
+
+  <!-- IVA -->
+  <div class="row g-3 mb-4">
+    <div class="col-auto">
+      <div class="form-check form-switch mt-2">
+        <input class="form-check-input" type="checkbox" name="aplica_iva" id="chk-iva" <%= (cotizacion.aplica_iva === undefined || cotizacion.aplica_iva) ? 'checked' : '' %>>
+        <label class="form-check-label" for="chk-iva">Aplicar IVA</label>
+      </div>
+    </div>
+    <div class="col-auto" id="iva-pct-wrap">
+      <div class="input-group input-group-sm" style="width:140px">
+        <span class="input-group-text">IVA %</span>
+        <input type="number" name="iva_porcentaje" class="form-control" step="0.01" min="0" max="100" value="<%= cotizacion.iva_porcentaje || 13 %>" id="input-iva-pct">
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalles -->
+  <h5>Items de la cotizacion</h5>
+  <div class="table-responsive">
+    <table class="table" id="tabla-detalles">
+      <thead class="table-light">
+        <tr>
+          <th style="width:120px">Tipo</th>
+          <th>Descripcion</th>
+          <th style="width:100px">Cantidad</th>
+          <th style="width:130px">Precio Unit.</th>
+          <th style="width:130px">Subtotal</th>
+          <th style="width:50px"></th>
+        </tr>
+      </thead>
+      <tbody id="detalles-body">
+        <% const detalles = cotizacion.detalles || []; %>
+        <% detalles.forEach((d, i) => { %>
+        <tr class="fila-detalle">
+          <td>
+            <select name="det_tipo" class="form-select form-select-sm">
+              <option value="Repuesto" <%= d.tipo === 'Repuesto' ? 'selected' : '' %>>Repuesto</option>
+              <option value="Servicio" <%= d.tipo === 'Servicio' ? 'selected' : '' %>>Servicio</option>
+            </select>
+          </td>
+          <td><input type="text" name="det_descripcion" class="form-control form-control-sm" value="<%= d.descripcion || '' %>" required></td>
+          <td><input type="number" name="det_cantidad" class="form-control form-control-sm calc-trigger" step="0.01" min="0.01" value="<%= d.cantidad || 1 %>"></td>
+          <td><input type="number" name="det_precio" class="form-control form-control-sm calc-trigger" step="0.01" min="0" value="<%= d.precio_unitario || 0 %>"></td>
+          <td class="subtotal-cell text-end fw-bold">$<%= ((d.cantidad || 1) * (d.precio_unitario || 0)).toFixed(2) %></td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+          <td class="text-end fw-bold" id="total-subtotal">$0.00</td>
+          <td></td>
+        </tr>
+        <tr id="row-iva">
+          <td colspan="4" class="text-end" id="label-iva"><strong>IVA (13%):</strong></td>
+          <td class="text-end fw-bold" id="total-iva">$0.00</td>
+          <td></td>
+        </tr>
+        <tr class="table-dark">
+          <td colspan="4" class="text-end"><strong>TOTAL:</strong></td>
+          <td class="text-end fw-bold fs-5" id="total-general">$0.00</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="4" class="text-end text-muted" id="label-convertido">Equivalente:</td>
+          <td class="text-end text-muted" id="total-convertido">-</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <button type="button" class="btn btn-sm btn-success mb-4" id="btn-agregar"><i class="bi bi-plus-lg"></i> Agregar Item</button>
+
+  <div>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar Cotizacion</button>
+    <a href="/cotizaciones" class="btn btn-outline-secondary">Cancelar</a>
+  </div>
+</form>
+
+<template id="tmpl-fila">
+  <tr class="fila-detalle">
+    <td>
+      <select name="det_tipo" class="form-select form-select-sm">
+        <option value="Repuesto">Repuesto</option>
+        <option value="Servicio">Servicio</option>
+      </select>
+    </td>
+    <td><input type="text" name="det_descripcion" class="form-control form-control-sm" required></td>
+    <td><input type="number" name="det_cantidad" class="form-control form-control-sm calc-trigger" step="0.01" min="0.01" value="1"></td>
+    <td><input type="number" name="det_precio" class="form-control form-control-sm calc-trigger" step="0.01" min="0" value="0"></td>
+    <td class="subtotal-cell text-end fw-bold">$0.00</td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button></td>
+  </tr>
+</template>
+
+<%- include('../partials/footer') %>
