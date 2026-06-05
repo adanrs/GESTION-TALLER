@@ -1,41 +1,158 @@
 <%- include('../partials/header') %>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2><i class="bi bi-tools"></i> Servicio #<%= servicio.id %></h2>
-  <div>
+<%
+  // Helper inline: estado -> clase de badge Bootstrap
+  function badgeEstado(e) {
+    switch (e) {
+      case 'Pendiente':  return 'bg-secondary';
+      case 'Asignada':   return 'bg-info text-dark';
+      case 'En proceso': return 'bg-warning text-dark';
+      case 'Completada': return 'bg-success';
+      case 'Por cobrar': return 'bg-primary';
+      case 'Cobrada':    return 'bg-dark';
+      case 'Cancelada':  return 'bg-danger';
+      default:           return 'bg-secondary';
+    }
+  }
+  var faltanTareas = (totalTareas > 0 && tareasCompletadas < totalTareas);
+%>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0">
+    <i class="bi bi-tools"></i> Servicio #<%= servicio.id %>
+    <span class="badge <%= badgeEstado(servicio.estado) %> align-middle"><%= servicio.estado %></span>
+    <% if (servicio.cobrado) { %>
+      <span class="badge bg-dark align-middle"><i class="bi bi-cash-coin"></i> COBRADA</span>
+    <% } %>
+  </h2>
+  <div class="d-flex flex-wrap gap-2">
+    <% if (esAdmin) { %>
     <a href="/servicios/<%= servicio.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
-    <a href="/vehiculos/<%= servicio.vehiculo_id %>" class="btn btn-outline-secondary">Ver Vehiculo</a>
-    <a href="/servicios" class="btn btn-outline-secondary">Volver</a>
+    <% } %>
+    <a href="/vehiculos/<%= servicio.vehiculo_id %>" class="btn btn-outline-secondary"><i class="bi bi-car-front"></i> Ver Vehiculo</a>
+    <a href="/servicios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
   </div>
 </div>
 
 <div class="card mb-4">
   <div class="card-body">
-    <div class="row">
-      <div class="col-md-4"><strong>Vehiculo:</strong> <a href="/vehiculos/<%= servicio.vehiculo_id %>"><%= servicio.placa %> - <%= servicio.marca %> <%= servicio.modelo %></a></div>
-      <div class="col-md-3"><strong>Cliente:</strong> <%= servicio.cliente_nombre %></div>
-      <div class="col-md-2"><strong>Fecha:</strong> <%= servicio.fecha ? servicio.fecha.substring(0, 10) : '' %></div>
-      <div class="col-md-3">
-        <strong>Estado:</strong>
-        <% if (servicio.estado === 'Completado') { %>
-          <span class="badge bg-success"><%= servicio.estado %></span>
-        <% } else if (servicio.estado === 'En Proceso') { %>
-          <span class="badge bg-warning text-dark"><%= servicio.estado %></span>
-        <% } else if (servicio.estado === 'Cancelado') { %>
-          <span class="badge bg-danger"><%= servicio.estado %></span>
+    <div class="row g-2">
+      <div class="col-12 col-md-4"><strong>Vehiculo:</strong> <a href="/vehiculos/<%= servicio.vehiculo_id %>"><%= servicio.placa %> - <%= servicio.marca %> <%= servicio.modelo %></a></div>
+      <div class="col-6 col-md-4"><strong>Cliente:</strong> <%= servicio.cliente_nombre %></div>
+      <div class="col-6 col-md-4"><strong>Mecanico asignado:</strong>
+        <% if (servicio.mecanico_nombre) { %>
+          <%= servicio.mecanico_nombre %>
         <% } else { %>
-          <span class="badge bg-secondary"><%= servicio.estado %></span>
+          <span class="badge bg-light text-muted border">Sin asignar</span>
         <% } %>
       </div>
     </div>
-    <div class="row mt-2">
-      <div class="col-md-6"><strong>Descripcion:</strong> <%= servicio.descripcion %></div>
-      <div class="col-md-2"><strong>Km:</strong> <%= servicio.kilometraje || '-' %></div>
-      <div class="col-md-2"><strong>Tecnico:</strong> <%= servicio.tecnico || '-' %></div>
-      <div class="col-md-2"><strong>Mano de obra:</strong> $<%= (servicio.costo || 0).toFixed(2) %></div>
+    <div class="row g-2 mt-1">
+      <div class="col-12 col-md-6"><strong>Descripcion:</strong> <%= servicio.descripcion %></div>
+      <div class="col-4 col-md-2"><strong>Km:</strong> <%= servicio.kilometraje || '-' %></div>
+      <div class="col-4 col-md-2"><strong>Tecnico:</strong> <%= servicio.tecnico || '-' %></div>
+      <div class="col-4 col-md-2"><strong>Mano de obra:</strong> $<%= (servicio.costo || 0).toFixed(2) %></div>
+    </div>
+    <div class="row g-2 mt-1">
+      <div class="col-6 col-md-4"><strong>Fecha:</strong> <%= servicio.fecha ? servicio.fecha.substring(0, 10) : '' %></div>
+      <% if (servicio.fecha_completado) { %>
+      <div class="col-6 col-md-4"><strong>Completada:</strong> <span class="text-success"><%= servicio.fecha_completado %></span></div>
+      <% } %>
+      <% if (servicio.cobrado && servicio.fecha_cobro) { %>
+      <div class="col-6 col-md-4"><strong>Cobrada:</strong> <span class="text-dark"><%= servicio.fecha_cobro %></span></div>
+      <% } %>
     </div>
     <% if (servicio.notas) { %>
     <div class="mt-2"><strong>Notas:</strong> <%= servicio.notas %></div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Acciones de estado -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-2">
+      <form method="POST" action="/servicios/<%= servicio.id %>/completar" class="d-inline">
+        <button type="submit" class="btn btn-success <%= faltanTareas ? 'opacity-75' : '' %>"
+                <% if (faltanTareas) { %>title="Faltan tareas por completar (<%= tareasCompletadas %>/<%= totalTareas %>)"<% } %>>
+          <i class="bi bi-check2-circle"></i> Completar orden
+        </button>
+      </form>
+      <% if (esAdmin) { %>
+      <form method="POST" action="/servicios/<%= servicio.id %>/por-cobrar" class="d-inline">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-receipt"></i> Marcar por cobrar</button>
+      </form>
+      <form method="POST" action="/servicios/<%= servicio.id %>/cobrar" class="d-inline">
+        <button type="submit" class="btn btn-dark"><i class="bi bi-cash-coin"></i> Marcar cobrada</button>
+      </form>
+      <a href="/servicios/<%= servicio.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+      <form method="POST" action="/servicios/<%= servicio.id %>/eliminar" class="d-inline"
+            onsubmit="return confirm('Eliminar este servicio?')">
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
+      </form>
+      <% } %>
+    </div>
+    <% if (faltanTareas) { %>
+    <p class="small text-muted mb-0 mt-2">
+      <i class="bi bi-info-circle"></i> Quedan tareas pendientes (<%= tareasCompletadas %> de <%= totalTareas %> completadas).
+    </p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Hoja de servicio - Tareas -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <h5 class="mb-0"><i class="bi bi-list-check"></i> Hoja de servicio - Tareas</h5>
+    <% if (totalTareas > 0) { %>
+    <span class="badge bg-<%= tareasCompletadas === totalTareas ? 'success' : 'secondary' %> ms-auto">
+      <%= tareasCompletadas %> / <%= totalTareas %> completadas
+    </span>
+    <% } %>
+  </div>
+  <div class="card-body">
+    <% if (totalTareas > 0) { %>
+    <div class="progress mb-3" style="height: 18px;">
+      <div class="progress-bar bg-success" role="progressbar"
+           style="width: <%= Math.round((tareasCompletadas / totalTareas) * 100) %>%"
+           aria-valuenow="<%= tareasCompletadas %>"
+           aria-valuemin="0" aria-valuemax="<%= totalTareas %>">
+        <%= tareasCompletadas %> de <%= totalTareas %> completadas
+      </div>
+    </div>
+    <ul class="list-group list-group-flush">
+      <% tareas.forEach(function(tarea) { %>
+      <li class="list-group-item d-flex align-items-center gap-3 px-0">
+        <% if (tarea.completado) { %>
+          <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0"></i>
+        <% } else { %>
+          <i class="bi bi-circle text-secondary fs-5 flex-shrink-0"></i>
+        <% } %>
+        <div class="flex-grow-1">
+          <span class="<%= tarea.completado ? 'text-decoration-line-through text-muted' : '' %>"><%= tarea.descripcion %></span>
+          <% if (tarea.completado && (tarea.tecnico || tarea.fecha_completado)) { %>
+          <div class="small text-muted">
+            por <strong><%= tarea.tecnico || 'N/A' %></strong>
+            <% if (tarea.fecha_completado) { %>&mdash; <%= tarea.fecha_completado %><% } %>
+          </div>
+          <% } %>
+        </div>
+        <form method="POST" action="/servicios/<%= servicio.id %>/tareas/<%= tarea.id %>/toggle" class="flex-shrink-0">
+          <% if (tarea.completado) { %>
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-counterclockwise"></i> Reabrir
+          </button>
+          <% } else { %>
+          <button type="submit" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-check-lg"></i> Marcar hecha
+          </button>
+          <% } %>
+        </form>
+      </li>
+      <% }) %>
+    </ul>
+    <% } else { %>
+    <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> Sin tareas registradas para este servicio.</p>
     <% } %>
   </div>
 </div>
@@ -87,5 +204,38 @@
   </div>
 </div>
 <% } %>
+
+<!-- Comentarios -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Comentarios</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="/servicios/<%= servicio.id %>/comentario" class="mb-3">
+      <label class="form-label" for="comentario">Agregar comentario</label>
+      <textarea name="comentario" id="comentario" class="form-control mb-2" rows="2"
+                placeholder="Escribe una nota o actualizacion sobre esta orden..." required></textarea>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-send"></i> Agregar comentario
+      </button>
+    </form>
+
+    <% if (comentarios && comentarios.length) { %>
+    <ul class="list-group list-group-flush">
+      <% comentarios.forEach(function(c) { %>
+      <li class="list-group-item px-0">
+        <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2">
+          <strong><i class="bi bi-person-circle"></i> <%= c.autor %></strong>
+          <span class="small text-muted"><%= c.fecha %></span>
+        </div>
+        <div class="mt-1" style="white-space: pre-wrap;"><%= c.comentario %></div>
+      </li>
+      <% }) %>
+    </ul>
+    <% } else { %>
+    <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> Sin comentarios.</p>
+    <% } %>
+  </div>
+</div>
 
 <%- include('../partials/footer') %>

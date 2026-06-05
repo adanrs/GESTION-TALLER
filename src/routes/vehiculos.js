@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 
+// Marcas ya registradas (para autocompletar en el formulario)
+function getMarcas() {
+  return db.prepare("SELECT DISTINCT marca FROM vehiculos WHERE marca IS NOT NULL AND TRIM(marca) != '' ORDER BY marca")
+    .all().map(r => r.marca);
+}
+
 // Listar vehiculos
 router.get('/', (req, res) => {
   const buscar = req.query.buscar || '';
@@ -30,6 +36,7 @@ router.get('/crear', (req, res) => {
     title: 'Nuevo Vehiculo',
     vehiculo: { cliente_id: req.query.cliente_id || '' },
     clientes,
+    marcas: getMarcas(),
     errors: []
   });
 });
@@ -45,7 +52,7 @@ router.post('/crear', (req, res) => {
 
   if (errors.length) {
     const clientes = db.prepare('SELECT id, nombre, cedula FROM clientes ORDER BY nombre').all();
-    return res.render('vehiculos/form', { title: 'Nuevo Vehiculo', vehiculo: req.body, clientes, errors });
+    return res.render('vehiculos/form', { title: 'Nuevo Vehiculo', vehiculo: req.body, clientes, marcas: getMarcas(), errors });
   }
 
   db.prepare('INSERT INTO vehiculos (cliente_id, placa, marca, modelo, ano, color, vin, notas) VALUES (?,?,?,?,?,?,?,?)')
@@ -63,7 +70,18 @@ router.get('/:id', (req, res) => {
   `).get(req.params.id);
   if (!vehiculo) return res.status(404).render('partials/error', { title: 'Error', message: 'Vehiculo no encontrado' });
 
-  const servicios = db.prepare('SELECT * FROM servicios WHERE vehiculo_id = ? ORDER BY fecha DESC').all(vehiculo.id);
+  const servicios = db.prepare(`
+    SELECT s.*,
+           COALESCE(u.nombre, s.tecnico) AS mecanico_nombre,
+           COALESCE((
+             SELECT SUM(si.cantidad * si.precio_unitario)
+             FROM servicio_items si WHERE si.servicio_id = s.id
+           ), 0) AS total_repuestos
+    FROM servicios s
+    LEFT JOIN usuarios u ON s.mecanico_id = u.id
+    WHERE s.vehiculo_id = ?
+    ORDER BY s.fecha DESC
+  `).all(vehiculo.id);
   const cotizaciones = db.prepare(`
     SELECT c.*, COALESCE(SUM(d.cantidad * d.precio_unitario), 0) as total
     FROM cotizaciones c
@@ -81,7 +99,7 @@ router.get('/:id/editar', (req, res) => {
   const vehiculo = db.prepare('SELECT * FROM vehiculos WHERE id = ?').get(req.params.id);
   if (!vehiculo) return res.status(404).render('partials/error', { title: 'Error', message: 'Vehiculo no encontrado' });
   const clientes = db.prepare('SELECT id, nombre, cedula FROM clientes ORDER BY nombre').all();
-  res.render('vehiculos/form', { title: 'Editar Vehiculo', vehiculo, clientes, errors: [] });
+  res.render('vehiculos/form', { title: 'Editar Vehiculo', vehiculo, clientes, marcas: getMarcas(), errors: [] });
 });
 
 router.post('/:id/editar', (req, res) => {
@@ -94,7 +112,7 @@ router.post('/:id/editar', (req, res) => {
 
   if (errors.length) {
     const clientes = db.prepare('SELECT id, nombre, cedula FROM clientes ORDER BY nombre').all();
-    return res.render('vehiculos/form', { title: 'Editar Vehiculo', vehiculo: { ...req.body, id: req.params.id }, clientes, errors });
+    return res.render('vehiculos/form', { title: 'Editar Vehiculo', vehiculo: { ...req.body, id: req.params.id }, clientes, marcas: getMarcas(), errors });
   }
 
   db.prepare('UPDATE vehiculos SET cliente_id=?, placa=?, marca=?, modelo=?, ano=?, color=?, vin=?, notas=? WHERE id=?')

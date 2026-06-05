@@ -1,38 +1,57 @@
 <%- include('../partials/header') %>
 
-<h2><i class="bi bi-person"></i> <%= title %></h2>
-<hr>
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0"><i class="bi bi-person"></i> <%= title %></h2>
+  <a href="/clientes" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
 
 <% if (errors.length) { %>
 <div class="alert alert-danger">
-  <ul class="mb-0"><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul>
+  <i class="bi bi-exclamation-triangle"></i> Revisa los siguientes campos:
+  <ul class="mb-0 mt-1"><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul>
 </div>
 <% } %>
 
 <form method="POST" action="/clientes<%= cliente.id ? `/${cliente.id}/editar` : '/crear' %>">
-  <div class="row g-3">
-    <div class="col-md-6">
-      <label class="form-label">Nombre Completo *</label>
-      <input type="text" name="nombre" class="form-control" value="<%= cliente.nombre || '' %>" required>
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Cedula / RIF</label>
-      <input type="text" name="cedula" class="form-control" value="<%= cliente.cedula || '' %>">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Telefono</label>
-      <input type="text" name="telefono" class="form-control" value="<%= cliente.telefono || '' %>">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Correo Electronico</label>
-      <input type="email" name="email" class="form-control" value="<%= cliente.email || '' %>">
-    </div>
-    <div class="col-12">
-      <label class="form-label">Direccion</label>
-      <input type="text" name="direccion" class="form-control" value="<%= cliente.direccion || '' %>">
+  <div class="card mb-3">
+    <div class="card-header"><h6 class="mb-0 text-uppercase text-muted"><i class="bi bi-person-vcard"></i> Datos personales</h6></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="nombre" class="form-label">Nombre Completo <span class="text-danger">*</span></label>
+          <input type="text" id="nombre" name="nombre" class="form-control" value="<%= cliente.nombre || '' %>" required>
+        </div>
+        <div class="col-md-6">
+          <label for="cedula" class="form-label">Cedula / RIF</label>
+          <input type="text" id="cedula" name="cedula" class="form-control" value="<%= cliente.cedula || '' %>">
+          <div class="form-text">Identificacion fiscal o personal del cliente.</div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="mt-4">
+
+  <div class="card mb-3">
+    <div class="card-header"><h6 class="mb-0 text-uppercase text-muted"><i class="bi bi-telephone"></i> Contacto</h6></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="telefono" class="form-label">Telefono</label>
+          <input type="text" id="telefono" name="telefono" class="form-control" value="<%= cliente.telefono || '' %>">
+        </div>
+        <div class="col-md-6">
+          <label for="email" class="form-label">Correo Electronico</label>
+          <input type="email" id="email" name="email" class="form-control" value="<%= cliente.email || '' %>">
+          <div class="form-text">Se usa para enviar cotizaciones por correo.</div>
+        </div>
+        <div class="col-12">
+          <label for="direccion" class="form-label">Direccion</label>
+          <input type="text" id="direccion" name="direccion" class="form-control" value="<%= cliente.direccion || '' %>">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
     <a href="/clientes" class="btn btn-outline-secondary">Cancelar</a>
   </div>

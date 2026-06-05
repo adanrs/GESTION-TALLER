@@ -11,7 +11,7 @@
 
 <form method="POST" action="/cotizaciones<%= cotizacion.id ? `/${cotizacion.id}/editar` : '/crear' %>">
   <div class="row g-3 mb-3">
-    <div class="col-md-4">
+    <div class="col-md-5">
       <label class="form-label">Vehiculo *</label>
       <select name="vehiculo_id" class="form-select" required>
         <option value="">-- Seleccionar vehiculo --</option>
@@ -20,19 +20,23 @@
         <% }) %>
       </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-4">
       <label class="form-label">Moneda *</label>
       <select name="moneda" class="form-select" id="select-moneda">
         <option value="USD" <%= (cotizacion.moneda || 'USD') === 'USD' ? 'selected' : '' %>>$ USD</option>
         <option value="CRC" <%= cotizacion.moneda === 'CRC' ? 'selected' : '' %>>&#8353; CRC</option>
       </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-3">
       <label class="form-label">T. Cambio</label>
-      <input type="number" name="tipo_cambio" class="form-control" step="0.01" min="0" value="<%= cotizacion.tipo_cambio || 515 %>" id="input-tc">
+      <div class="input-group">
+        <input type="number" name="tipo_cambio" class="form-control" step="0.01" min="0" value="<%= cotizacion.tipo_cambio || 515 %>" id="input-tc">
+        <button type="button" class="btn btn-outline-secondary" id="btn-actualizar-tc" title="Actualizar tipo de cambio"><i class="bi bi-arrow-repeat"></i></button>
+      </div>
+      <small class="text-muted d-block mt-1" id="tc-feedback"></small>
     </div>
     <% if (cotizacion.id) { %>
-    <div class="col-md-2">
+    <div class="col-md-3">
       <label class="form-label">Estado</label>
       <select name="estado" class="form-select">
         <% ['Borrador','Enviada','Aprobada','Rechazada'].forEach(e => { %>
@@ -41,9 +45,16 @@
       </select>
     </div>
     <% } %>
-    <div class="col-md-<%= cotizacion.id ? '2' : '4' %>">
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <label class="form-label">Garantia ofrecida</label>
+      <input type="text" name="garantia" class="form-control" value="<%= cotizacion.garantia || '' %>" placeholder="Ej: 3 meses o 5000 km en repuestos">
+    </div>
+    <div class="col-12">
       <label class="form-label">Notas</label>
-      <input type="text" name="notas" class="form-control" value="<%= cotizacion.notas || '' %>">
+      <textarea name="notas" rows="2" class="form-control"><%= cotizacion.notas || '' %></textarea>
     </div>
   </div>
 
@@ -142,5 +153,49 @@
     <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button></td>
   </tr>
 </template>
+
+<script>
+(function () {
+  var inputTC = document.getElementById('input-tc');
+  var btnTC = document.getElementById('btn-actualizar-tc');
+  var feedback = document.getElementById('tc-feedback');
+
+  async function actualizarTC() {
+    if (feedback) { feedback.classList.remove('text-danger'); feedback.textContent = 'Consultando...'; }
+    try {
+      var resp = await fetch('/cotizaciones/api/tipo-cambio');
+      var data = await resp.json();
+      if (data && data.ok && data.venta) {
+        // Asegurar punto decimal para que el backend lo parsee bien
+        var valor = String(data.venta).replace(',', '.');
+        inputTC.value = parseFloat(valor);
+        if (feedback) {
+          feedback.classList.remove('text-danger');
+          feedback.textContent = data.fecha ? ('TC al ' + data.fecha) : 'TC actualizado';
+        }
+      } else {
+        throw new Error('Respuesta no valida');
+      }
+    } catch (e) {
+      if (feedback) {
+        feedback.classList.add('text-danger');
+        feedback.textContent = 'No se pudo obtener el TC';
+      }
+    }
+  }
+
+  if (btnTC) btnTC.addEventListener('click', actualizarTC);
+
+  <% if (!cotizacion.id) { %>
+  // Cotizacion nueva: autollamar si el TC esta vacio o con el valor por defecto
+  (function () {
+    var actual = inputTC ? parseFloat(inputTC.value) : NaN;
+    if (!inputTC || !inputTC.value || isNaN(actual) || actual === 515) {
+      actualizarTC();
+    }
+  })();
+  <% } %>
+})();
+</script>
 
 <%- include('../partials/footer') %>

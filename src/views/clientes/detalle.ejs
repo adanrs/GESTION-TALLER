@@ -1,48 +1,74 @@
 <%- include('../partials/header') %>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2><i class="bi bi-person"></i> <%= cliente.nombre %></h2>
-  <div>
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0"><i class="bi bi-person-circle"></i> <%= cliente.nombre %></h2>
+  <div class="d-flex flex-wrap gap-2">
     <a href="/clientes/<%= cliente.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
-    <a href="/clientes" class="btn btn-outline-secondary">Volver</a>
+    <a href="/clientes" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
   </div>
 </div>
 
 <div class="card mb-4">
+  <div class="card-header"><h6 class="mb-0 text-uppercase text-muted"><i class="bi bi-info-circle"></i> Datos del cliente</h6></div>
   <div class="card-body">
-    <div class="row">
-      <div class="col-md-3"><strong>Cedula/RIF:</strong> <%= cliente.cedula || '-' %></div>
-      <div class="col-md-3"><strong>Telefono:</strong> <%= cliente.telefono || '-' %></div>
-      <div class="col-md-3"><strong>Email:</strong> <%= cliente.email || '-' %></div>
-      <div class="col-md-3"><strong>Registro:</strong> <%= cliente.fecha_registro ? cliente.fecha_registro.substring(0, 10) : '' %></div>
+    <div class="row g-3">
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="small text-muted text-uppercase">Cedula/RIF</div>
+        <div class="fw-semibold"><%= cliente.cedula || '-' %></div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="small text-muted text-uppercase">Telefono</div>
+        <div class="fw-semibold"><%= cliente.telefono || '-' %></div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="small text-muted text-uppercase">Email</div>
+        <div class="fw-semibold text-break"><%= cliente.email || '-' %></div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="small text-muted text-uppercase">Registro</div>
+        <div class="fw-semibold"><%= cliente.fecha_registro ? cliente.fecha_registro.substring(0, 10) : '-' %></div>
+      </div>
+      <% if (cliente.direccion) { %>
+      <div class="col-12">
+        <div class="small text-muted text-uppercase">Direccion</div>
+        <div class="fw-semibold"><%= cliente.direccion %></div>
+      </div>
+      <% } %>
     </div>
-    <% if (cliente.direccion) { %>
-    <div class="mt-2"><strong>Direccion:</strong> <%= cliente.direccion %></div>
-    <% } %>
   </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h4><i class="bi bi-car-front"></i> Vehiculos (<%= vehiculos.length %>)</h4>
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h4 class="mb-0"><i class="bi bi-car-front"></i> Vehiculos <span class="badge bg-secondary align-middle"><%= vehiculos.length %></span></h4>
   <a href="/vehiculos/crear?cliente_id=<%= cliente.id %>" class="btn btn-sm btn-success"><i class="bi bi-plus-lg"></i> Agregar Vehiculo</a>
 </div>
 
 <% if (vehiculos.length) { %>
 <div class="row g-3">
   <% vehiculos.forEach(v => { %>
-  <div class="col-md-6 col-lg-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title"><a href="/vehiculos/<%= v.id %>"><%= v.placa %></a></h5>
-        <p class="card-text mb-1"><%= v.marca %> <%= v.modelo %> <% if(v.ano) { %>(<%= v.ano %>)<% } %></p>
-        <% if(v.color) { %><small class="text-muted">Color: <%= v.color %></small><% } %>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <a href="/vehiculos/<%= v.id %>" class="text-decoration-none">
+      <div class="card card-hover h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-1"><i class="bi bi-car-front-fill text-primary"></i> <%= v.placa %></h5>
+          <p class="card-text mb-1 text-body"><%= v.marca %> <%= v.modelo %> <% if(v.ano) { %>(<%= v.ano %>)<% } %></p>
+          <% if(v.color) { %><small class="text-muted">Color: <%= v.color %></small><% } %>
+        </div>
       </div>
-    </div>
+    </a>
   </div>
   <% }) %>
 </div>
 <% } else { %>
-<p class="text-muted">Este cliente no tiene vehiculos registrados.</p>
+<div class="card">
+  <div class="card-body text-center text-muted p-5">
+    <i class="bi bi-car-front fs-1 d-block mb-2"></i>
+    <p class="mb-0">Este cliente no tiene vehiculos registrados.</p>
+    <a href="/vehiculos/crear?cliente_id=<%= cliente.id %>" class="btn btn-sm btn-success mt-2">
+      <i class="bi bi-plus-lg"></i> Agregar el primero
+    </a>
+  </div>
+</div>
 <% } %>
 
 <%- include('../partials/footer') %>

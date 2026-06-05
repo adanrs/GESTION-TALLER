@@ -6,6 +6,9 @@ const db = require('./db/database');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Evita el 404 ruidoso del favicon
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -45,9 +48,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// Admin-only middleware helper
+// Roles y control de acceso por rol
 app.use((req, res, next) => {
-  res.locals.esAdmin = req.session.usuario?.rol === 'admin';
+  const rol = req.session.usuario?.rol;
+  res.locals.esAdmin = rol === 'admin';
+  res.locals.esMecanico = rol === 'tecnico';
+
+  // El mecanico (rol tecnico) solo puede ver sus ordenes, su perfil y autenticacion.
+  // Cualquier otra seccion (clientes, vehiculos, cotizaciones, usuarios, configuracion, reportes) queda bloqueada.
+  if (rol === 'tecnico') {
+    const permitido = req.path.startsWith('/servicios') ||
+                      req.path.startsWith('/perfil') ||
+                      req.path.startsWith('/auth');
+    if (req.path === '/') return res.redirect('/servicios');
+    if (!permitido) {
+      return res.status(403).render('partials/error', {
+        title: 'Acceso restringido',
+        message: 'No tienes acceso a esta seccion. Solo puedes ver tus ordenes de trabajo asignadas.'
+      });
+    }
+  }
   next();
 });
 
@@ -58,6 +78,9 @@ app.use('/vehiculos', require('./routes/vehiculos'));
 app.use('/servicios', require('./routes/servicios'));
 app.use('/cotizaciones', require('./routes/cotizaciones'));
 app.use('/usuarios', require('./routes/usuarios'));
+app.use('/perfil', require('./routes/perfil'));
+app.use('/reportes', require('./routes/reportes'));
+app.use('/accesos', require('./routes/accesos'));
 app.use('/configuracion', require('./routes/configuracion'));
 
 // 404 handler

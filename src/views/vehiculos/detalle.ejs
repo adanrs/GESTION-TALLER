@@ -2,7 +2,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2><i class="bi bi-car-front"></i> <%= vehiculo.placa %> - <%= vehiculo.marca %> <%= vehiculo.modelo %></h2>
-  <div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/reportes/vehiculo/<%= vehiculo.id %>" class="btn btn-outline-dark" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Reporte PDF</a>
     <a href="/vehiculos/<%= vehiculo.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
     <a href="/clientes/<%= vehiculo.cliente_id %>" class="btn btn-outline-secondary">Ver Cliente</a>
   </div>
@@ -38,7 +39,16 @@
     <div class="table-responsive">
       <table class="table table-hover">
         <thead class="table-light">
-          <tr><th>Fecha</th><th>Descripcion</th><th>Km</th><th>Tecnico</th><th>Costo</th><th>Estado</th><th></th></tr>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripcion</th>
+            <th>Km</th>
+            <th>Mecanico</th>
+            <th>Costo M.O.</th>
+            <th>Repuestos</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
           <% servicios.forEach(s => { %>
@@ -46,8 +56,9 @@
             <td><%= s.fecha ? s.fecha.substring(0, 10) : '' %></td>
             <td><%= s.descripcion %></td>
             <td><%= s.kilometraje || '-' %></td>
-            <td><%= s.tecnico || '-' %></td>
+            <td><%= s.mecanico_nombre || '-' %></td>
             <td>$<%= (s.costo || 0).toFixed(2) %></td>
+            <td>$<%= (s.total_repuestos || 0).toFixed(2) %></td>
             <td>
               <% if (s.estado === 'Completado') { %>
                 <span class="badge bg-success"><%= s.estado %></span>

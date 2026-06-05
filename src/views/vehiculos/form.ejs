@@ -26,7 +26,13 @@
     </div>
     <div class="col-md-4">
       <label class="form-label">Marca *</label>
-      <input type="text" name="marca" class="form-control" value="<%= vehiculo.marca || '' %>" required>
+      <input type="text" name="marca" class="form-control" list="marcas-list" value="<%= vehiculo.marca || '' %>" placeholder="Selecciona o escribe una marca" autocomplete="off" required>
+      <% if (typeof marcas !== 'undefined' && marcas.length) { %>
+      <datalist id="marcas-list">
+        <% marcas.forEach(m => { %><option value="<%= m %>"></option><% }) %>
+      </datalist>
+      <div class="form-text">Marcas registradas disponibles; tambien puedes escribir una nueva.</div>
+      <% } %>
     </div>
     <div class="col-md-4">
       <label class="form-label">Modelo *</label>

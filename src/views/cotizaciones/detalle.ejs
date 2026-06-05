@@ -2,8 +2,9 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2><i class="bi bi-receipt"></i> Cotizacion <%= cotizacion.numero %></h2>
-  <div class="d-print-none">
-    <a href="/cotizaciones/<%= cotizacion.id %>/pdf" target="_blank" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  <div class="d-print-none d-flex flex-wrap gap-2">
+    <a href="/cotizaciones/<%= cotizacion.id %>/pdf" target="_blank" class="btn btn-outline-dark"><i class="bi bi-file-earmark-pdf"></i> Ver PDF</a>
+    <a href="/cotizaciones/<%= cotizacion.id %>/csv" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</a>
     <% if (whatsapp) { %>
     <a href="https://wa.me/<%= whatsapp %>?text=Hola,%20le%20envio%20la%20cotizacion%20<%= cotizacion.numero %>" target="_blank" class="btn btn-success"><i class="bi bi-whatsapp"></i> WhatsApp</a>
     <% } %>
@@ -12,6 +13,14 @@
     <a href="/cotizaciones" class="btn btn-outline-secondary">Volver</a>
   </div>
 </div>
+
+<form method="POST" action="/cotizaciones/<%= cotizacion.id %>/enviar-correo" class="d-print-none mb-4">
+  <div class="input-group" style="max-width:480px">
+    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+    <input type="email" name="email" class="form-control" value="<%= cotizacion.email || '' %>" placeholder="correo del cliente">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-envelope"></i> Enviar por correo</button>
+  </div>
+</form>
 
 <div class="card mb-4">
   <div class="card-body">
@@ -89,6 +98,10 @@
         </tfoot>
       </table>
     </div>
+
+    <% if (cotizacion.garantia) { %>
+    <div class="mt-3"><strong>Garantia:</strong> <%= cotizacion.garantia %></div>
+    <% } %>
 
     <% if (cotizacion.notas) { %>
     <div class="mt-3"><strong>Notas:</strong> <%= cotizacion.notas %></div>

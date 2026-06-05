@@ -1,0 +1,90 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0">
+    <i class="bi bi-shield-lock"></i> Log de Accesos
+  </h2>
+  <span class="text-muted small">Ultimos 200 registros</span>
+</div>
+
+<form class="row g-2 mb-3" method="GET">
+  <div class="col-12 col-md flex-md-grow-1">
+    <input type="text" name="usuario" class="form-control"
+           placeholder="Buscar por usuario..."
+           value="<%= filtros.usuario %>">
+  </div>
+  <div class="col-8 col-md-auto">
+    <select name="exito" class="form-select">
+      <option value=""  <%= filtros.exito === ''  ? 'selected' : '' %>>Todos</option>
+      <option value="1" <%= filtros.exito === '1' ? 'selected' : '' %>>Exitoso</option>
+      <option value="0" <%= filtros.exito === '0' ? 'selected' : '' %>>Fallido</option>
+    </select>
+  </div>
+  <div class="col-4 col-md-auto">
+    <button class="btn btn-outline-secondary w-100">
+      <i class="bi bi-search"></i> Filtrar
+    </button>
+  </div>
+  <% if (filtros.usuario || filtros.exito !== '') { %>
+  <div class="col-12 col-md-auto">
+    <a href="/accesos" class="btn btn-outline-danger w-100">Limpiar</a>
+  </div>
+  <% } %>
+</form>
+
+<div class="card">
+  <div class="card-body p-0">
+    <% if (accesos.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th class="d-none d-md-table-cell">Nombre</th>
+            <th class="d-none d-md-table-cell">Rol</th>
+            <th>Resultado</th>
+            <th class="d-none d-md-table-cell">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% accesos.forEach(function(a) { %>
+          <tr>
+            <td class="text-nowrap small"><%= a.fecha || '' %></td>
+            <td class="fw-semibold"><%= a.usuario || '' %></td>
+            <td class="d-none d-md-table-cell text-muted"><%= a.nombre || '-' %></td>
+            <td class="d-none d-md-table-cell">
+              <% if (a.rol) { %>
+                <span class="badge bg-secondary"><%= a.rol %></span>
+              <% } else { %>
+                <span class="text-muted">-</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (a.exito) { %>
+                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Exito</span>
+              <% } else { %>
+                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Fallido</span>
+              <% } %>
+            </td>
+            <td class="d-none d-md-table-cell small text-muted"><%= a.ip || '' %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <div class="text-center text-muted p-5">
+        <i class="bi bi-shield-lock fs-1 d-block mb-2"></i>
+        <% if (filtros.usuario || filtros.exito !== '') { %>
+          <p class="mb-0">No hay registros que coincidan con el filtro.</p>
+          <a href="/accesos" class="btn btn-sm btn-outline-secondary mt-2">Limpiar filtros</a>
+        <% } else { %>
+          <p class="mb-0">Aun no hay registros de acceso.</p>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

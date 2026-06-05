@@ -9,9 +9,11 @@
 </div>
 <% } %>
 
+<% var estadosCanonicos = ['Pendiente','Asignada','En proceso','Completada','Por cobrar','Cobrada','Cancelada']; %>
+
 <form method="POST" action="/servicios<%= servicio.id ? `/${servicio.id}/editar` : '/crear' %>">
   <div class="row g-3">
-    <div class="col-md-6">
+    <div class="col-12 col-md-6">
       <label class="form-label">Vehiculo *</label>
       <select name="vehiculo_id" class="form-select" required>
         <option value="">-- Seleccionar vehiculo --</option>
@@ -20,35 +22,71 @@
         <% }) %>
       </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-12 col-md-6">
+      <label class="form-label">Mecanico asignado</label>
+      <select name="mecanico_id" class="form-select">
+        <option value="">-- Sin asignar --</option>
+        <% mecanicos.forEach(m => { %>
+        <option value="<%= m.id %>" <%= String(servicio.mecanico_id) === String(m.id) ? 'selected' : '' %>><%= m.nombre %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
       <label class="form-label">Estado</label>
       <select name="estado" class="form-select">
-        <% ['Pendiente','En Proceso','Completado','Cancelado'].forEach(e => { %>
+        <% estadosCanonicos.forEach(e => { %>
         <option value="<%= e %>" <%= (servicio.estado || 'Pendiente') === e ? 'selected' : '' %>><%= e %></option>
         <% }) %>
       </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <label class="form-label">Kilometraje</label>
       <input type="number" name="kilometraje" class="form-control" value="<%= servicio.kilometraje || '' %>">
     </div>
-    <div class="col-md-6">
-      <label class="form-label">Descripcion del servicio *</label>
-      <textarea name="descripcion" class="form-control" rows="2" required><%= servicio.descripcion || '' %></textarea>
-    </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <label class="form-label">Tecnico</label>
       <input type="text" name="tecnico" class="form-control" value="<%= servicio.tecnico || '' %>">
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <label class="form-label">Costo mano de obra ($)</label>
       <input type="number" name="costo" class="form-control" step="0.01" min="0" value="<%= servicio.costo || '0' %>">
+    </div>
+    <div class="col-12">
+      <label class="form-label">Descripcion del servicio *</label>
+      <textarea name="descripcion" class="form-control" rows="2" required><%= servicio.descripcion || '' %></textarea>
     </div>
     <div class="col-12">
       <label class="form-label">Notas</label>
       <textarea name="notas" class="form-control" rows="2"><%= servicio.notas || '' %></textarea>
     </div>
   </div>
+
+  <!-- Tareas solicitadas -->
+  <h5 class="mt-4"><i class="bi bi-list-check"></i> Tareas solicitadas</h5>
+  <div id="tareas-container">
+    <% const tareasForm = servicio.tareas || []; %>
+    <% if (tareasForm.length === 0) { %>
+    <div class="input-group mb-2 fila-tarea">
+      <input type="text" name="tarea_descripcion" class="form-control" placeholder="Ej: Cambio de aceite, revisar frenos...">
+      <button type="button" class="btn btn-outline-danger btn-quitar-tarea"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <% } else { %>
+    <% tareasForm.forEach(t => { %>
+    <div class="input-group mb-2 fila-tarea">
+      <input type="text" name="tarea_descripcion" class="form-control" value="<%= t.descripcion || t %>" placeholder="Ej: Cambio de aceite, revisar frenos...">
+      <button type="button" class="btn btn-outline-danger btn-quitar-tarea"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <% }) %>
+    <% } %>
+  </div>
+  <button type="button" class="btn btn-sm btn-outline-primary mb-4" id="btn-agregar-tarea"><i class="bi bi-plus-lg"></i> Agregar tarea</button>
+
+  <template id="tmpl-tarea">
+    <div class="input-group mb-2 fila-tarea">
+      <input type="text" name="tarea_descripcion" class="form-control" placeholder="Ej: Cambio de aceite, revisar frenos...">
+      <button type="button" class="btn btn-outline-danger btn-quitar-tarea"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </template>
 
   <!-- Items (repuestos/partes) -->
   <h5 class="mt-4">Repuestos / Partes utilizadas</h5>
@@ -114,5 +152,28 @@
     <a href="/servicios" class="btn btn-outline-secondary">Cancelar</a>
   </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var contenedor = document.getElementById('tareas-container');
+  var tmplTarea  = document.getElementById('tmpl-tarea');
+  var btnAgregar = document.getElementById('btn-agregar-tarea');
+
+  if (btnAgregar && contenedor && tmplTarea) {
+    btnAgregar.addEventListener('click', function () {
+      var fila = tmplTarea.content.cloneNode(true);
+      contenedor.appendChild(fila);
+    });
+
+    contenedor.addEventListener('click', function (e) {
+      var btn = e.target.closest('.btn-quitar-tarea');
+      if (btn) {
+        var fila = btn.closest('.fila-tarea');
+        if (fila) fila.remove();
+      }
+    });
+  }
+});
+</script>
 
 <%- include('../partials/footer') %>

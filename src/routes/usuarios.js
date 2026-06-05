@@ -25,12 +25,15 @@ router.get('/crear', (req, res) => {
 });
 
 router.post('/crear', (req, res) => {
-  const { nombre, usuario, password, password2, rol } = req.body;
+  const { nombre, usuario, password, password2, rol, email } = req.body;
   const errors = [];
   if (!nombre?.trim()) errors.push('El nombre es obligatorio');
   if (!usuario?.trim()) errors.push('El usuario es obligatorio');
   if (!password || password.length < 4) errors.push('La clave debe tener al menos 4 caracteres');
   if (password !== password2) errors.push('Las claves no coinciden');
+
+  const emailTrim = (email || '').trim();
+  if (emailTrim && !emailTrim.includes('@')) errors.push('El correo no tiene un formato valido');
 
   const exists = db.prepare('SELECT id FROM usuarios WHERE usuario = ?').get(usuario?.trim());
   if (exists) errors.push('Ese nombre de usuario ya existe');
@@ -40,24 +43,27 @@ router.post('/crear', (req, res) => {
   }
 
   const hash = bcrypt.hashSync(password, 10);
-  db.prepare('INSERT INTO usuarios (nombre, usuario, password, rol) VALUES (?, ?, ?, ?)')
-    .run(nombre.trim(), usuario.trim(), hash, rol || 'tecnico');
+  db.prepare('INSERT INTO usuarios (nombre, usuario, password, email, rol) VALUES (?, ?, ?, ?, ?)')
+    .run(nombre.trim(), usuario.trim(), hash, emailTrim || null, rol || 'tecnico');
   res.flash('success', 'Usuario creado');
   res.redirect('/usuarios');
 });
 
 // Editar
 router.get('/:id/editar', (req, res) => {
-  const user = db.prepare('SELECT id, nombre, usuario, rol, activo FROM usuarios WHERE id = ?').get(req.params.id);
+  const user = db.prepare('SELECT id, nombre, usuario, email, rol, activo FROM usuarios WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).render('partials/error', { title: 'Error', message: 'Usuario no encontrado' });
   res.render('usuarios/form', { title: 'Editar Usuario', user, errors: [] });
 });
 
 router.post('/:id/editar', (req, res) => {
-  const { nombre, usuario, password, password2, rol, activo } = req.body;
+  const { nombre, usuario, password, password2, rol, activo, email } = req.body;
   const errors = [];
   if (!nombre?.trim()) errors.push('El nombre es obligatorio');
   if (!usuario?.trim()) errors.push('El usuario es obligatorio');
+
+  const emailTrim = (email || '').trim();
+  if (emailTrim && !emailTrim.includes('@')) errors.push('El correo no tiene un formato valido');
 
   const exists = db.prepare('SELECT id FROM usuarios WHERE usuario = ? AND id != ?').get(usuario?.trim(), req.params.id);
   if (exists) errors.push('Ese nombre de usuario ya existe');
@@ -71,11 +77,11 @@ router.post('/:id/editar', (req, res) => {
 
   if (password) {
     const hash = bcrypt.hashSync(password, 10);
-    db.prepare('UPDATE usuarios SET nombre=?, usuario=?, password=?, rol=?, activo=? WHERE id=?')
-      .run(nombre.trim(), usuario.trim(), hash, rol || 'tecnico', activo === 'on' ? 1 : 0, req.params.id);
+    db.prepare('UPDATE usuarios SET nombre=?, usuario=?, password=?, email=?, rol=?, activo=? WHERE id=?')
+      .run(nombre.trim(), usuario.trim(), hash, emailTrim || null, rol || 'tecnico', activo === 'on' ? 1 : 0, req.params.id);
   } else {
-    db.prepare('UPDATE usuarios SET nombre=?, usuario=?, rol=?, activo=? WHERE id=?')
-      .run(nombre.trim(), usuario.trim(), rol || 'tecnico', activo === 'on' ? 1 : 0, req.params.id);
+    db.prepare('UPDATE usuarios SET nombre=?, usuario=?, email=?, rol=?, activo=? WHERE id=?')
+      .run(nombre.trim(), usuario.trim(), emailTrim || null, rol || 'tecnico', activo === 'on' ? 1 : 0, req.params.id);
   }
   res.flash('success', 'Usuario actualizado');
   res.redirect('/usuarios');

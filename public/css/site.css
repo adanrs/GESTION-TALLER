@@ -1,5 +1,28 @@
+:root {
+  /* Paleta base (se mantiene azul/oscuro de Bootstrap) */
+  --gt-primary: #0d6efd;
+  --gt-primary-rgb: 13, 110, 253;
+  --gt-success: #198754;
+  --gt-success-rgb: 25, 135, 84;
+
+  /* Sistema de sombras multinivel para dar profundidad */
+  --gt-shadow-xs: 0 1px 2px rgba(16, 24, 40, .06);
+  --gt-shadow-sm: 0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .04);
+  --gt-shadow-md: 0 4px 12px rgba(16, 24, 40, .08), 0 2px 4px rgba(16, 24, 40, .04);
+  --gt-shadow-lg: 0 12px 28px rgba(16, 24, 40, .12), 0 4px 8px rgba(16, 24, 40, .06);
+
+  /* Curva y duración de transición compartida */
+  --gt-ease: cubic-bezier(.4, 0, .2, 1);
+  --gt-transition: .2s var(--gt-ease);
+  --gt-radius: .65rem;
+}
+
 body {
-  background-color: #f8f9fa;
+  /* Gradiente muy sutil para dar profundidad al conjunto de cards (no blanco puro) */
+  background-color: #f4f6fb;
+  background-image: linear-gradient(180deg, #f7f9fc 0%, #eef1f7 100%);
+  background-attachment: fixed;
+  color: #1f2733;
   font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -7,15 +30,243 @@ body {
   font-weight: 600;
 }
 
-.card {
-  box-shadow: 0 1px 3px rgba(0,0,0,.1);
-  border: none;
+/* Navbar: gradiente oscuro muy sutil + sombra inferior para separarla del contenido */
+.navbar.bg-dark {
+  background-image: linear-gradient(180deg, #23252b 0%, #1a1c20 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
 }
 
+.navbar .nav-link {
+  transition: color var(--gt-transition), opacity var(--gt-transition);
+}
+
+/* Cards: sombra suave multinivel, borde sutil, radio mayor y elevación en hover */
+.card {
+  border: 1px solid rgba(16, 24, 40, .06);
+  border-radius: var(--gt-radius);
+  box-shadow: var(--gt-shadow-sm);
+  transition: transform var(--gt-transition), box-shadow var(--gt-transition);
+  will-change: transform;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--gt-shadow-md);
+}
+
+/* Cards de acción/enlace (dashboard) que envuelven enlaces: realce algo mayor */
+a > .card:hover,
+.card-hover:hover {
+  box-shadow: var(--gt-shadow-lg);
+}
+
+.card-header {
+  background-color: rgba(16, 24, 40, .015);
+  border-bottom: 1px solid rgba(16, 24, 40, .06);
+}
+
+/* Botones: transición suave + leve realce en hover */
+.btn {
+  border-radius: .5rem;
+  transition: transform var(--gt-transition), box-shadow var(--gt-transition),
+    background-color var(--gt-transition), border-color var(--gt-transition);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background-image: linear-gradient(180deg, #2b7bff 0%, #0d6efd 100%);
+  border-color: #0d6efd;
+  box-shadow: 0 1px 2px rgba(var(--gt-primary-rgb), .35);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(var(--gt-primary-rgb), .35);
+}
+
+.btn-success {
+  background-image: linear-gradient(180deg, #20a063 0%, #198754 100%);
+  border-color: #198754;
+  box-shadow: 0 1px 2px rgba(var(--gt-success-rgb), .35);
+}
+
+.btn-success:hover {
+  box-shadow: 0 4px 12px rgba(var(--gt-success-rgb), .35);
+}
+
+/* Botones outline: sombra discreta solo en hover para no recargar */
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-danger:hover {
+  box-shadow: var(--gt-shadow-sm);
+}
+
+/* Tablas: encabezado con fondo y elevación ligera, filas hover refinadas */
 .table th {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.table > thead th {
+  background-color: #eef1f7;
+  color: #3a4252;
+  border-bottom: 2px solid rgba(16, 24, 40, .08);
+}
+
+.table-hover > tbody > tr {
+  transition: background-color .15s var(--gt-ease);
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: rgba(var(--gt-primary-rgb), .05);
+}
+
+/* Tablas dentro de cards: respetan el radio redondeado del contenedor.
+   OJO: en .table-responsive NO se pone overflow:hidden porque anularia el
+   scroll horizontal de Bootstrap y la tabla se cortaria en movil. */
+.card > .table-responsive,
+.card > .table {
+  border-radius: var(--gt-radius);
+}
+.card > .table {
+  overflow: hidden;
+}
+
+/* Inputs: focus con sombra de realce acorde al color primario */
+.form-control,
+.form-select {
+  transition: border-color var(--gt-transition), box-shadow var(--gt-transition);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(var(--gt-primary-rgb), .6);
+  box-shadow: 0 0 0 .2rem rgba(var(--gt-primary-rgb), .18);
+}
+
+/* Badges: ligeramente más redondeados */
+.badge {
+  border-radius: .5rem;
+  letter-spacing: .2px;
+}
+
+/* Modales y dropdowns: profundidad acorde al resto */
+.modal-content {
+  border: none;
+  border-radius: var(--gt-radius);
+  box-shadow: var(--gt-shadow-lg);
+}
+
+.dropdown-menu {
+  border: 1px solid rgba(16, 24, 40, .06);
+  border-radius: .65rem;
+  box-shadow: var(--gt-shadow-md);
+}
+
+/* Accesibilidad: respetar preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .btn,
+  .navbar .nav-link,
+  .form-control,
+  .form-select,
+  .table-hover > tbody > tr {
+    transition: none !important;
+  }
+
+  .card:hover,
+  .btn:hover,
+  .btn:active,
+  a > .card:hover,
+  .card-hover:hover {
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   Utilidades UI/UX (agregadas - no alteran reglas anteriores)
+   ========================================================================== */
+
+/* Encabezado de pagina: separacion ligera del contenido siguiente */
+.page-header {
+  padding-bottom: .25rem;
+}
+
+/* Stat cards del dashboard: tarjetas de KPI con icono destacado.
+   Reutilizan el sistema de sombras/hover de .card ya definido arriba. */
+.stat-card {
+  overflow: hidden;
+  position: relative;
+}
+
+.stat-card .card-body {
+  padding: 1.1rem 1.25rem;
+}
+
+.stat-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: 0 0 auto;
+  border-radius: .85rem;
+  font-size: 1.6rem;
+  color: #fff;
+}
+
+.stat-card__value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #1f2733;
+  letter-spacing: -.5px;
+}
+
+.stat-card__label {
+  font-size: .82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #6b7280;
+}
+
+/* Variantes de color del icono (semanticas) */
+.stat-card--primary .stat-card__icon { background-image: linear-gradient(160deg, #3b82f6, #0d6efd); }
+.stat-card--success .stat-card__icon { background-image: linear-gradient(160deg, #22c07a, #198754); }
+.stat-card--warning .stat-card__icon { background-image: linear-gradient(160deg, #f0a020, #e08e0b); }
+.stat-card--info    .stat-card__icon { background-image: linear-gradient(160deg, #2bb7d6, #0aa2c0); }
+
+/* Barra de color sutil a la izquierda para reforzar la categoria */
+.stat-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+}
+.stat-card--primary::before { background: #0d6efd; }
+.stat-card--success::before { background: #198754; }
+.stat-card--warning::before { background: #e08e0b; }
+.stat-card--info::before    { background: #0aa2c0; }
+
+@media (max-width: 575.98px) {
+  .stat-card__value { font-size: 1.6rem; }
+  .stat-card__icon { width: 2.75rem; height: 2.75rem; font-size: 1.35rem; }
+}
+
+/* Tap targets comodos en movil para botones de accion en tablas */
+@media (max-width: 575.98px) {
+  .table td .btn-sm {
+    padding: .35rem .55rem;
+  }
 }
 
 /* Print styles for cotizacion */
@@ -29,5 +280,9 @@ body {
   .card {
     box-shadow: none;
     border: 1px solid #dee2e6;
+    transform: none !important;
+  }
+  body {
+    background: #fff !important;
   }
 }

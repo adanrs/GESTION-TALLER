@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar Sesion - Gestion Taller</title>
+  <title><%= title %> - Gestion Taller</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <style>
@@ -27,32 +27,33 @@
     <div class="card shadow-lg">
       <div class="card-body p-4 p-sm-5">
         <div class="text-center mb-4">
-          <i class="bi bi-wrench-adjustable-circle text-primary" style="font-size: 3rem;"></i>
-          <h3 class="mt-2 mb-1">Gestion Taller</h3>
-          <p class="text-muted mb-0">Inicia sesion para continuar</p>
+          <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+          <h3 class="mt-2 mb-1">Nueva Contrasena</h3>
+          <p class="text-muted mb-0">Ingresa tu nueva contrasena</p>
         </div>
         <% if (error) { %>
           <div class="alert alert-danger"><%= error %></div>
         <% } %>
-        <form method="POST" action="/auth/login">
+        <form method="POST" action="/auth/reset/<%= token %>">
           <div class="mb-3">
-            <label for="usuario" class="form-label">Usuario</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-person"></i></span>
-              <input type="text" id="usuario" name="usuario" class="form-control" autocomplete="username" required autofocus>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label for="password" class="form-label">Clave</label>
+            <label for="password" class="form-label">Nueva contrasena</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required>
+              <input type="password" id="password" name="password" class="form-control" minlength="4" autocomplete="new-password" required autofocus>
+            </div>
+            <div class="form-text">Minimo 4 caracteres.</div>
+          </div>
+          <div class="mb-4">
+            <label for="password2" class="form-label">Confirmar contrasena</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" id="password2" name="password2" class="form-control" autocomplete="new-password" required>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right"></i> Entrar</button>
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg"></i> Guardar contrasena</button>
         </form>
         <p class="text-center mt-3 mb-0">
-          <a href="/auth/recuperar">Olvidaste tu contrasena?</a>
+          <a href="/auth/login"><i class="bi bi-arrow-left"></i> Volver a iniciar sesion</a>
         </p>
       </div>
     </div>

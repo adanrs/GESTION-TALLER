@@ -18,6 +18,10 @@
       </button>
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto">
+          <% if (typeof esMecanico !== 'undefined' && esMecanico) { %>
+          <%# El mecanico solo ve sus ordenes asignadas %>
+          <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-tools"></i> Mis Ordenes</a></li>
+          <% } else { %>
           <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Inicio</a></li>
           <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
           <li class="nav-item"><a class="nav-link" href="/vehiculos"><i class="bi bi-car-front"></i> Vehiculos</a></li>
@@ -25,6 +29,7 @@
           <li class="nav-item"><a class="nav-link" href="/cotizaciones"><i class="bi bi-receipt"></i> Cotizaciones</a></li>
           <% if (typeof esAdmin !== 'undefined' && esAdmin) { %>
           <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people-fill"></i> Usuarios</a></li>
+          <% } %>
           <% } %>
         </ul>
         <% if (typeof usuario !== 'undefined' && usuario) { %>
@@ -36,10 +41,12 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><span class="dropdown-item-text text-muted small"><%= usuario.rol %></span></li>
               <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/perfil"><i class="bi bi-person-gear"></i> Mi Perfil</a></li>
               <% if (typeof esAdmin !== 'undefined' && esAdmin) { %>
+              <li><a class="dropdown-item" href="/accesos"><i class="bi bi-shield-lock"></i> Log de Accesos</a></li>
               <li><a class="dropdown-item" href="/configuracion"><i class="bi bi-gear"></i> Configuracion</a></li>
-              <li><hr class="dropdown-divider"></li>
               <% } %>
+              <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="/auth/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesion</a></li>
             </ul>
           </li>

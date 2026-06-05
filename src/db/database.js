@@ -95,9 +95,56 @@ db.exec(`
     nombre TEXT NOT NULL,
     usuario TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    email TEXT,
     rol TEXT DEFAULT 'tecnico',
     activo INTEGER DEFAULT 1,
     fecha_registro TEXT DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS password_resets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expira TEXT NOT NULL,
+    usado INTEGER DEFAULT 0,
+    fecha TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+  );
+
+  -- Hoja de servicio: tareas solicitadas por el cliente que el mecanico realiza
+  CREATE TABLE IF NOT EXISTS servicio_tareas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    servicio_id INTEGER NOT NULL,
+    descripcion TEXT NOT NULL,
+    completado INTEGER DEFAULT 0,
+    tecnico TEXT,
+    fecha_completado TEXT,
+    orden INTEGER DEFAULT 0,
+    FOREIGN KEY (servicio_id) REFERENCES servicios(id) ON DELETE CASCADE
+  );
+
+  -- Log de accesos: quien y cuando inicio sesion (exitoso o fallido)
+  CREATE TABLE IF NOT EXISTS accesos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER,
+    usuario TEXT,
+    nombre TEXT,
+    rol TEXT,
+    exito INTEGER DEFAULT 1,
+    ip TEXT,
+    user_agent TEXT,
+    fecha TEXT DEFAULT (datetime('now','localtime'))
+  );
+
+  -- Comentarios de la orden de trabajo (mecanico/encargado)
+  CREATE TABLE IF NOT EXISTS servicio_comentarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    servicio_id INTEGER NOT NULL,
+    usuario_id INTEGER,
+    autor TEXT,
+    comentario TEXT NOT NULL,
+    fecha TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (servicio_id) REFERENCES servicios(id) ON DELETE CASCADE
   );
 
   CREATE INDEX IF NOT EXISTS idx_vehiculos_cliente ON vehiculos(cliente_id);
@@ -105,15 +152,35 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_cotizaciones_vehiculo ON cotizaciones(vehiculo_id);
   CREATE INDEX IF NOT EXISTS idx_cotizacion_detalles_cotizacion ON cotizacion_detalles(cotizacion_id);
   CREATE INDEX IF NOT EXISTS idx_servicio_items_servicio ON servicio_items(servicio_id);
+  CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token);
+  CREATE INDEX IF NOT EXISTS idx_servicio_tareas_servicio ON servicio_tareas(servicio_id);
+  CREATE INDEX IF NOT EXISTS idx_servicio_comentarios_servicio ON servicio_comentarios(servicio_id);
+  CREATE INDEX IF NOT EXISTS idx_accesos_fecha ON accesos(fecha);
 `);
+
+// Migraciones para bases de datos existentes (agregar columnas nuevas si faltan)
+function ensureColumn(tabla, columna, definicion) {
+  const cols = db.prepare(`PRAGMA table_info(${tabla})`).all();
+  if (!cols.some(c => c.name === columna)) {
+    db.exec(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${definicion}`);
+  }
+}
+ensureColumn('usuarios', 'email', 'TEXT');
+// Asignacion de mecanico y flujo de cobro en la orden de servicio
+ensureColumn('servicios', 'mecanico_id', 'INTEGER');
+ensureColumn('servicios', 'fecha_completado', 'TEXT');
+ensureColumn('servicios', 'cobrado', 'INTEGER DEFAULT 0');
+ensureColumn('servicios', 'fecha_cobro', 'TEXT');
+// Garantia que se ofrece al cliente en la cotizacion
+ensureColumn('cotizaciones', 'garantia', 'TEXT');
 
 // Create default admin user if no users exist
 const bcrypt = require('bcryptjs');
 const userCount = db.prepare('SELECT COUNT(*) as count FROM usuarios').get().count;
 if (userCount === 0) {
   const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO usuarios (nombre, usuario, password, rol) VALUES (?, ?, ?, ?)')
-    .run('Administrador', 'admin', hash, 'admin');
+  db.prepare('INSERT INTO usuarios (nombre, usuario, password, email, rol) VALUES (?, ?, ?, ?, ?)')
+    .run('Administrador', 'admin', hash, process.env.ADMIN_EMAIL || null, 'admin');
   console.log('Usuario admin creado (usuario: admin, clave: admin123)');
 }
 

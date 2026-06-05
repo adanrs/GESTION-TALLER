@@ -20,6 +20,10 @@
       <input type="text" name="usuario" class="form-control" value="<%= user.usuario || '' %>" required>
     </div>
     <div class="col-md-6">
+      <label class="form-label">Correo electronico</label>
+      <input type="email" name="email" class="form-control" value="<%= user.email || '' %>">
+    </div>
+    <div class="col-md-6">
       <label class="form-label">Rol</label>
       <select name="rol" class="form-select">
         <option value="tecnico" <%= (user.rol || 'tecnico') === 'tecnico' ? 'selected' : '' %>>Tecnico</option>
