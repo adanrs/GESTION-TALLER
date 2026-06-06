@@ -4,13 +4,40 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../db/database');
 const mailer = require('../lib/mailer');
+const rateLimit = require('express-rate-limit');
+
+// ── Rate limiters ───────────────────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) =>
+    res.status(429).render('auth/login', {
+      title: 'Iniciar Sesion',
+      error: 'Demasiados intentos. Espera unos minutos e intenta de nuevo.',
+    }),
+});
+
+const recuperarLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) =>
+    res.status(429).render('auth/recuperar', {
+      title: 'Recuperar Contrasena',
+      error: 'Demasiadas solicitudes. Espera unos minutos.',
+      mensaje: null,
+    }),
+});
 
 router.get('/login', (req, res) => {
   if (req.session.usuario) return res.redirect('/');
   res.render('auth/login', { title: 'Iniciar Sesion', error: null });
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
   const { usuario, password } = req.body;
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip;
   const ua = req.headers['user-agent'] || '';
@@ -50,7 +77,7 @@ router.get('/recuperar', (req, res) => {
   res.render('auth/recuperar', { title: 'Recuperar Contrasena', error: null, mensaje: null });
 });
 
-router.post('/recuperar', async (req, res) => {
+router.post('/recuperar', recuperarLimiter, async (req, res) => {
   const email = (req.body.email || '').trim();
 
   if (!email) {
@@ -108,8 +135,8 @@ router.post('/reset/:token', (req, res) => {
     });
   }
 
-  if (!password || password.length < 4) {
-    return res.render('auth/reset', { title: 'Nueva Contrasena', token, error: 'La clave debe tener al menos 4 caracteres' });
+  if (!password || password.length < 8) {
+    return res.render('auth/reset', { title: 'Nueva Contrasena', token, error: 'La clave debe tener al menos 8 caracteres' });
   }
   if (password !== password2) {
     return res.render('auth/reset', { title: 'Nueva Contrasena', token, error: 'Las claves no coinciden' });

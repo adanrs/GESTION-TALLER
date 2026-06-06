@@ -16,8 +16,10 @@
     "better-sqlite3": "^12.8.0",
     "ejs": "^5.0.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "express-session": "^1.19.0",
     "express-validator": "^7.3.1",
+    "helmet": "^8.2.0",
     "multer": "^2.1.1",
     "nodemailer": "^6.10.1",
     "pdfkit": "^0.18.0"

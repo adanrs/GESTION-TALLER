@@ -1,19 +1,6 @@
 <%- include('../partials/header') %>
 
 <%
-  // Helper inline: estado -> clase de badge Bootstrap
-  function badgeEstado(e) {
-    switch (e) {
-      case 'Pendiente':  return 'bg-secondary';
-      case 'Asignada':   return 'bg-info text-dark';
-      case 'En proceso': return 'bg-warning text-dark';
-      case 'Completada': return 'bg-success';
-      case 'Por cobrar': return 'bg-primary';
-      case 'Cobrada':    return 'bg-dark';
-      case 'Cancelada':  return 'bg-danger';
-      default:           return 'bg-secondary';
-    }
-  }
   var estadosCanonicos = ['Pendiente','Asignada','En proceso','Completada','Por cobrar','Cobrada','Cancelada'];
 %>
 
@@ -65,7 +52,9 @@
             <th class="d-none d-lg-table-cell">Descripcion</th>
             <th class="d-none d-md-table-cell">Mecanico</th>
             <th class="d-none d-lg-table-cell">Tecnico</th>
+            <% if (!esMecanico) { %>
             <th class="d-none d-md-table-cell text-end">Costo</th>
+            <% } %>
             <th>Estado</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -93,9 +82,11 @@
               <% } %>
             </td>
             <td class="d-none d-lg-table-cell"><%= s.tecnico || '-' %></td>
+            <% if (!esMecanico) { %>
             <td class="d-none d-md-table-cell text-end text-nowrap">$<%= (s.costo || 0).toFixed(2) %></td>
+            <% } %>
             <td>
-              <span class="badge <%= badgeEstado(s.estado) %>"><%= s.estado %></span>
+              <span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span>
               <% if (s.cobrado) { %>
                 <span class="badge bg-dark"><i class="bi bi-cash-coin"></i></span>
               <% } %>

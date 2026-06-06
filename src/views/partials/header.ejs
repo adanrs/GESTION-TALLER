@@ -20,15 +20,15 @@
         <ul class="navbar-nav ms-auto">
           <% if (typeof esMecanico !== 'undefined' && esMecanico) { %>
           <%# El mecanico solo ve sus ordenes asignadas %>
-          <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-tools"></i> Mis Ordenes</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/servicios') ? 'active' : '' %>" href="/servicios"><i class="bi bi-tools"></i> Mis Ordenes</a></li>
           <% } else { %>
-          <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Inicio</a></li>
-          <li class="nav-item"><a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
-          <li class="nav-item"><a class="nav-link" href="/vehiculos"><i class="bi bi-car-front"></i> Vehiculos</a></li>
-          <li class="nav-item"><a class="nav-link" href="/servicios"><i class="bi bi-tools"></i> Servicios</a></li>
-          <li class="nav-item"><a class="nav-link" href="/cotizaciones"><i class="bi bi-receipt"></i> Cotizaciones</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath === '/' ? 'active' : '' %>" href="/"><i class="bi bi-speedometer2"></i> Inicio</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/clientes') ? 'active' : '' %>" href="/clientes"><i class="bi bi-people"></i> Clientes</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/vehiculos') ? 'active' : '' %>" href="/vehiculos"><i class="bi bi-car-front"></i> Vehiculos</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/servicios') ? 'active' : '' %>" href="/servicios"><i class="bi bi-tools"></i> Servicios</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/cotizaciones') ? 'active' : '' %>" href="/cotizaciones"><i class="bi bi-receipt"></i> Cotizaciones</a></li>
           <% if (typeof esAdmin !== 'undefined' && esAdmin) { %>
-          <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people-fill"></i> Usuarios</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/usuarios') ? 'active' : '' %>" href="/usuarios"><i class="bi bi-people-fill"></i> Usuarios</a></li>
           <% } %>
           <% } %>
         </ul>

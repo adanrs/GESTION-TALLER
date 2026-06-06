@@ -1,10 +1,18 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const helmet = require('helmet');
 const db = require('./db/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Detras de proxy/HTTPS en produccion (VPS): confiar en X-Forwarded-* para cookie secure y req.ip
+app.set('trust proxy', 1);
+
+// Cabeceras de seguridad (HSTS, nosniff, frameguard, etc.).
+// CSP se deja desactivado por ahora porque usamos CDN + scripts inline en las vistas.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // Evita el 404 ruidoso del favicon
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -18,12 +26,26 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Secreto de sesion: OBLIGATORIO en produccion (sin fallback inseguro).
+// En desarrollo local cae a un valor de dev con aviso; en produccion aborta si falta.
+const SESSION_SECRET = process.env.SESSION_SECRET
+  || (process.env.NODE_ENV === 'production' ? null : 'dev-solo-local-no-usar-en-produccion');
+if (!SESSION_SECRET) {
+  console.error('FATAL: SESSION_SECRET no esta definido. Definilo en el entorno (.env) antes de arrancar en produccion.');
+  process.exit(1);
+}
+
 // Sessions
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'taller-secret-key-change-in-production',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 8 * 60 * 60 * 1000 } // 8 hours
+  cookie: {
+    maxAge: 8 * 60 * 60 * 1000, // 8 horas
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // requiere HTTPS en prod (trust proxy activo)
+    sameSite: 'lax' // mitiga CSRF de formularios cross-site
+  }
 }));
 
 // Flash messages via session
@@ -34,6 +56,7 @@ app.use((req, res, next) => {
     req.session.flash = { type, message };
   };
   res.locals.usuario = req.session.usuario || null;
+  res.locals.currentPath = req.path; // para marcar el item activo del navbar
   next();
 });
 

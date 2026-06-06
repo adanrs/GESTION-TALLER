@@ -30,10 +30,10 @@
       <hr>
       <form method="POST" action="/perfil/email">
         <div class="mb-3">
-          <label class="form-label">Correo electronico (para recuperar contrasena)</label>
+          <label class="form-label" for="perfil-email">Correo electronico (para recuperar contrasena)</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input type="email" name="email" class="form-control" value="<%= user.email || '' %>">
+            <input type="email" name="email" id="perfil-email" class="form-control" value="<%= user.email || '' %>">
           </div>
         </div>
         <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar correo</button>
@@ -47,24 +47,24 @@
       <form method="POST" action="/perfil/password">
         <div class="row g-3">
           <div class="col-12">
-            <label class="form-label">Contrasena actual *</label>
+            <label class="form-label" for="perfil-actual">Contrasena actual *</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" name="actual" class="form-control" required>
+              <input type="password" name="actual" id="perfil-actual" class="form-control" required>
             </div>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Nueva contrasena *</label>
+            <label class="form-label" for="perfil-password">Nueva contrasena *</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" name="password" class="form-control" minlength="4" required>
+              <input type="password" name="password" id="perfil-password" class="form-control" minlength="4" required>
             </div>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Confirmar nueva contrasena *</label>
+            <label class="form-label" for="perfil-password2">Confirmar nueva contrasena *</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" name="password2" class="form-control" required>
+              <input type="password" name="password2" id="perfil-password2" class="form-control" required>
             </div>
           </div>
         </div>

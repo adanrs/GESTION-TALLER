@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../db/database');
+const audit = require('../lib/auditoria');
 
 // Admin guard
 function soloAdmin(req, res, next) {
@@ -29,7 +30,7 @@ router.post('/crear', (req, res) => {
   const errors = [];
   if (!nombre?.trim()) errors.push('El nombre es obligatorio');
   if (!usuario?.trim()) errors.push('El usuario es obligatorio');
-  if (!password || password.length < 4) errors.push('La clave debe tener al menos 4 caracteres');
+  if (!password || password.length < 8) errors.push('La clave debe tener al menos 8 caracteres');
   if (password !== password2) errors.push('Las claves no coinciden');
 
   const emailTrim = (email || '').trim();
@@ -68,7 +69,7 @@ router.post('/:id/editar', (req, res) => {
   const exists = db.prepare('SELECT id FROM usuarios WHERE usuario = ? AND id != ?').get(usuario?.trim(), req.params.id);
   if (exists) errors.push('Ese nombre de usuario ya existe');
 
-  if (password && password.length < 4) errors.push('La clave debe tener al menos 4 caracteres');
+  if (password && password.length < 8) errors.push('La clave debe tener al menos 8 caracteres');
   if (password && password !== password2) errors.push('Las claves no coinciden');
 
   if (errors.length) {
@@ -79,9 +80,23 @@ router.post('/:id/editar', (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     db.prepare('UPDATE usuarios SET nombre=?, usuario=?, password=?, email=?, rol=?, activo=? WHERE id=?')
       .run(nombre.trim(), usuario.trim(), hash, emailTrim || null, rol || 'tecnico', activo === 'on' ? 1 : 0, req.params.id);
+    audit.registrar({
+      usuario:    req.session.usuario,
+      accion:     'editar_usuario',
+      entidad:    'usuario',
+      entidad_id: req.params.id,
+      detalle:    'Contrasena actualizada por admin',
+    });
   } else {
     db.prepare('UPDATE usuarios SET nombre=?, usuario=?, email=?, rol=?, activo=? WHERE id=?')
       .run(nombre.trim(), usuario.trim(), emailTrim || null, rol || 'tecnico', activo === 'on' ? 1 : 0, req.params.id);
+    audit.registrar({
+      usuario:    req.session.usuario,
+      accion:     'editar_usuario',
+      entidad:    'usuario',
+      entidad_id: req.params.id,
+      detalle:    `Rol actualizado a: ${rol || 'tecnico'}`,
+    });
   }
   res.flash('success', 'Usuario actualizado');
   res.redirect('/usuarios');

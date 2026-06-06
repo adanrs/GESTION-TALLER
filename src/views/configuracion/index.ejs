@@ -9,25 +9,25 @@
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-6">
-          <label class="form-label">Nombre del Taller</label>
-          <input type="text" name="nombre_taller" class="form-control" value="<%= config.nombre_taller || '' %>" placeholder="Mi Taller Mecanico">
+          <label class="form-label" for="cfg-nombre">Nombre del Taller</label>
+          <input type="text" name="nombre_taller" id="cfg-nombre" class="form-control" value="<%= config.nombre_taller || '' %>" placeholder="Mi Taller Mecanico">
         </div>
         <div class="col-md-6">
-          <label class="form-label">Telefono</label>
-          <input type="text" name="telefono_taller" class="form-control" value="<%= config.telefono_taller || '' %>" placeholder="2222-3333">
+          <label class="form-label" for="cfg-telefono">Telefono</label>
+          <input type="text" name="telefono_taller" id="cfg-telefono" class="form-control" value="<%= config.telefono_taller || '' %>" placeholder="2222-3333">
         </div>
         <div class="col-md-6">
-          <label class="form-label"><i class="bi bi-whatsapp text-success"></i> WhatsApp</label>
-          <input type="text" name="whatsapp_taller" class="form-control" value="<%= config.whatsapp_taller || '' %>" placeholder="50688881234 (con codigo de pais, sin +)">
+          <label class="form-label" for="cfg-whatsapp"><i class="bi bi-whatsapp text-success"></i> WhatsApp</label>
+          <input type="text" name="whatsapp_taller" id="cfg-whatsapp" class="form-control" value="<%= config.whatsapp_taller || '' %>" placeholder="50688881234 (con codigo de pais, sin +)">
           <small class="text-muted">Se muestra como link clickeable en el PDF y cotizaciones.</small>
         </div>
         <div class="col-md-6">
-          <label class="form-label">Correo Electronico</label>
-          <input type="email" name="email_taller" class="form-control" value="<%= config.email_taller || '' %>" placeholder="taller@ejemplo.com">
+          <label class="form-label" for="cfg-email">Correo Electronico</label>
+          <input type="email" name="email_taller" id="cfg-email" class="form-control" value="<%= config.email_taller || '' %>" placeholder="taller@ejemplo.com">
         </div>
         <div class="col-12">
-          <label class="form-label">Direccion</label>
-          <input type="text" name="direccion_taller" class="form-control" value="<%= config.direccion_taller || '' %>" placeholder="San Jose, Costa Rica">
+          <label class="form-label" for="cfg-direccion">Direccion</label>
+          <input type="text" name="direccion_taller" id="cfg-direccion" class="form-control" value="<%= config.direccion_taller || '' %>" placeholder="San Jose, Costa Rica">
         </div>
       </div>
     </div>
@@ -38,19 +38,19 @@
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label">Moneda por defecto</label>
-          <select name="moneda" class="form-select">
+          <label class="form-label" for="cfg-moneda">Moneda por defecto</label>
+          <select name="moneda" id="cfg-moneda" class="form-select">
             <option value="USD" <%= (config.moneda || 'USD') === 'USD' ? 'selected' : '' %>>$ Dolares (USD)</option>
             <option value="CRC" <%= config.moneda === 'CRC' ? 'selected' : '' %>>&#8353; Colones (CRC)</option>
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label">Tipo de Cambio (CRC por 1 USD)</label>
-          <input type="number" name="tipo_cambio_crc" class="form-control" step="0.01" min="0" value="<%= config.tipo_cambio_crc || '515' %>">
+          <label class="form-label" for="cfg-tc">Tipo de Cambio (CRC por 1 USD)</label>
+          <input type="number" name="tipo_cambio_crc" id="cfg-tc" class="form-control" step="0.01" min="0" value="<%= config.tipo_cambio_crc || '515' %>">
         </div>
         <div class="col-md-4">
-          <label class="form-label">IVA (%)</label>
-          <input type="number" name="iva_porcentaje" class="form-control" step="0.01" min="0" max="100" value="<%= config.iva_porcentaje || '13' %>">
+          <label class="form-label" for="cfg-iva">IVA (%)</label>
+          <input type="number" name="iva_porcentaje" id="cfg-iva" class="form-control" step="0.01" min="0" max="100" value="<%= config.iva_porcentaje || '13' %>">
         </div>
         <div class="col-12">
           <div class="form-check form-switch">

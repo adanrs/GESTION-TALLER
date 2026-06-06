@@ -12,8 +12,8 @@
 <form method="POST" action="/cotizaciones<%= cotizacion.id ? `/${cotizacion.id}/editar` : '/crear' %>">
   <div class="row g-3 mb-3">
     <div class="col-md-5">
-      <label class="form-label">Vehiculo *</label>
-      <select name="vehiculo_id" class="form-select" required>
+      <label class="form-label" for="cot-vehiculo">Vehiculo *</label>
+      <select name="vehiculo_id" id="cot-vehiculo" class="form-select" required>
         <option value="">-- Seleccionar vehiculo --</option>
         <% vehiculos.forEach(v => { %>
         <option value="<%= v.id %>" <%= String(cotizacion.vehiculo_id) === String(v.id) ? 'selected' : '' %>><%= v.placa %> - <%= v.marca %> <%= v.modelo %> (<%= v.cliente_nombre %>)</option>
@@ -21,14 +21,14 @@
       </select>
     </div>
     <div class="col-md-4">
-      <label class="form-label">Moneda *</label>
+      <label class="form-label" for="select-moneda">Moneda *</label>
       <select name="moneda" class="form-select" id="select-moneda">
         <option value="USD" <%= (cotizacion.moneda || 'USD') === 'USD' ? 'selected' : '' %>>$ USD</option>
         <option value="CRC" <%= cotizacion.moneda === 'CRC' ? 'selected' : '' %>>&#8353; CRC</option>
       </select>
     </div>
     <div class="col-md-3">
-      <label class="form-label">T. Cambio</label>
+      <label class="form-label" for="input-tc">T. Cambio</label>
       <div class="input-group">
         <input type="number" name="tipo_cambio" class="form-control" step="0.01" min="0" value="<%= cotizacion.tipo_cambio || 515 %>" id="input-tc">
         <button type="button" class="btn btn-outline-secondary" id="btn-actualizar-tc" title="Actualizar tipo de cambio"><i class="bi bi-arrow-repeat"></i></button>
@@ -37,8 +37,8 @@
     </div>
     <% if (cotizacion.id) { %>
     <div class="col-md-3">
-      <label class="form-label">Estado</label>
-      <select name="estado" class="form-select">
+      <label class="form-label" for="cot-estado">Estado</label>
+      <select name="estado" id="cot-estado" class="form-select">
         <% ['Borrador','Enviada','Aprobada','Rechazada'].forEach(e => { %>
         <option value="<%= e %>" <%= (cotizacion.estado || 'Borrador') === e ? 'selected' : '' %>><%= e %></option>
         <% }) %>
@@ -49,12 +49,12 @@
 
   <div class="row g-3 mb-3">
     <div class="col-md-6">
-      <label class="form-label">Garantia ofrecida</label>
-      <input type="text" name="garantia" class="form-control" value="<%= cotizacion.garantia || '' %>" placeholder="Ej: 3 meses o 5000 km en repuestos">
+      <label class="form-label" for="cot-garantia">Garantia ofrecida</label>
+      <input type="text" name="garantia" id="cot-garantia" class="form-control" value="<%= cotizacion.garantia || '' %>" placeholder="Ej: 3 meses o 5000 km en repuestos">
     </div>
     <div class="col-12">
-      <label class="form-label">Notas</label>
-      <textarea name="notas" rows="2" class="form-control"><%= cotizacion.notas || '' %></textarea>
+      <label class="form-label" for="cot-notas">Notas</label>
+      <textarea name="notas" id="cot-notas" rows="2" class="form-control"><%= cotizacion.notas || '' %></textarea>
     </div>
   </div>
 
@@ -93,16 +93,16 @@
         <% detalles.forEach((d, i) => { %>
         <tr class="fila-detalle">
           <td>
-            <select name="det_tipo" class="form-select form-select-sm">
+            <select name="det_tipo" class="form-select form-select-sm" aria-label="Tipo de item">
               <option value="Repuesto" <%= d.tipo === 'Repuesto' ? 'selected' : '' %>>Repuesto</option>
               <option value="Servicio" <%= d.tipo === 'Servicio' ? 'selected' : '' %>>Servicio</option>
             </select>
           </td>
-          <td><input type="text" name="det_descripcion" class="form-control form-control-sm" value="<%= d.descripcion || '' %>" required></td>
-          <td><input type="number" name="det_cantidad" class="form-control form-control-sm calc-trigger" step="0.01" min="0.01" value="<%= d.cantidad || 1 %>"></td>
-          <td><input type="number" name="det_precio" class="form-control form-control-sm calc-trigger" step="0.01" min="0" value="<%= d.precio_unitario || 0 %>"></td>
+          <td><input type="text" name="det_descripcion" class="form-control form-control-sm" aria-label="Descripcion del item" value="<%= d.descripcion || '' %>" required></td>
+          <td><input type="number" name="det_cantidad" class="form-control form-control-sm calc-trigger" aria-label="Cantidad" step="0.01" min="0.01" value="<%= d.cantidad || 1 %>"></td>
+          <td><input type="number" name="det_precio" class="form-control form-control-sm calc-trigger" aria-label="Precio unitario" step="0.01" min="0" value="<%= d.precio_unitario || 0 %>"></td>
           <td class="subtotal-cell text-end fw-bold">$<%= ((d.cantidad || 1) * (d.precio_unitario || 0)).toFixed(2) %></td>
-          <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button></td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar" aria-label="Quitar item"><i class="bi bi-x-lg"></i></button></td>
         </tr>
         <% }) %>
       </tbody>
@@ -141,16 +141,16 @@
 <template id="tmpl-fila">
   <tr class="fila-detalle">
     <td>
-      <select name="det_tipo" class="form-select form-select-sm">
+      <select name="det_tipo" class="form-select form-select-sm" aria-label="Tipo de item">
         <option value="Repuesto">Repuesto</option>
         <option value="Servicio">Servicio</option>
       </select>
     </td>
-    <td><input type="text" name="det_descripcion" class="form-control form-control-sm" required></td>
-    <td><input type="number" name="det_cantidad" class="form-control form-control-sm calc-trigger" step="0.01" min="0.01" value="1"></td>
-    <td><input type="number" name="det_precio" class="form-control form-control-sm calc-trigger" step="0.01" min="0" value="0"></td>
+    <td><input type="text" name="det_descripcion" class="form-control form-control-sm" aria-label="Descripcion del item" required></td>
+    <td><input type="number" name="det_cantidad" class="form-control form-control-sm calc-trigger" aria-label="Cantidad" step="0.01" min="0.01" value="1"></td>
+    <td><input type="number" name="det_precio" class="form-control form-control-sm calc-trigger" aria-label="Precio unitario" step="0.01" min="0" value="0"></td>
     <td class="subtotal-cell text-end fw-bold">$0.00</td>
-    <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button></td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar" title="Quitar" aria-label="Quitar item"><i class="bi bi-x-lg"></i></button></td>
   </tr>
 </template>
 

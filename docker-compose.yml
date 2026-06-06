@@ -11,8 +11,9 @@ services:
       - DB_PATH=/app/data/taller.db
       # URL publica de la app (usada para armar el enlace de recuperacion del correo)
       - APP_URL=${APP_URL:-http://localhost:9900}
-      # Secreto de sesion (cambialo en produccion)
-      - SESSION_SECRET=${SESSION_SECRET:-taller-secret-key-change-in-production}
+      # Secreto de sesion: OBLIGATORIO. El deploy falla si no lo defines en .env
+      # (genera uno con: openssl rand -hex 32)
+      - SESSION_SECRET=${SESSION_SECRET:?Defina SESSION_SECRET en el archivo .env}
       # Correo SMTP para recuperacion de contrasena (dejar vacio para modo log/dev)
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}

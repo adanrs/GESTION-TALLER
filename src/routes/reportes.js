@@ -5,6 +5,19 @@ const fs = require('fs');
 const db = require('../db/database');
 const { rutaSegura } = require('../lib/uploads');
 
+// ── Guard: solo encargado (admin) ───────────────────────────────────────────
+function soloAdmin(req, res, next) {
+  if (req.session.usuario?.rol !== 'admin') {
+    return res.status(403).render('partials/error', {
+      title: 'Acceso denegado',
+      message: 'Solo el encargado puede acceder a los reportes.',
+    });
+  }
+  next();
+}
+
+router.use(soloAdmin);
+
 // ── Helpers de configuracion ────────────────────────────────────────────────
 function getAllConfig() {
   const rows = db.prepare('SELECT clave, valor FROM configuracion').all();

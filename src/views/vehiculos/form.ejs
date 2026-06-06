@@ -12,8 +12,8 @@
 <form method="POST" action="/vehiculos<%= vehiculo.id ? `/${vehiculo.id}/editar` : '/crear' %>">
   <div class="row g-3">
     <div class="col-md-6">
-      <label class="form-label">Propietario *</label>
-      <select name="cliente_id" class="form-select" required>
+      <label class="form-label" for="veh-cliente">Propietario *</label>
+      <select name="cliente_id" id="veh-cliente" class="form-select" required>
         <option value="">-- Seleccionar cliente --</option>
         <% clientes.forEach(c => { %>
         <option value="<%= c.id %>" <%= String(vehiculo.cliente_id) === String(c.id) ? 'selected' : '' %>><%= c.nombre %> <% if(c.cedula) { %>(<%= c.cedula %>)<% } %></option>
@@ -21,12 +21,12 @@
       </select>
     </div>
     <div class="col-md-6">
-      <label class="form-label">Placa *</label>
-      <input type="text" name="placa" class="form-control text-uppercase" value="<%= vehiculo.placa || '' %>" required>
+      <label class="form-label" for="veh-placa">Placa *</label>
+      <input type="text" name="placa" id="veh-placa" class="form-control text-uppercase" value="<%= vehiculo.placa || '' %>" required>
     </div>
     <div class="col-md-4">
-      <label class="form-label">Marca *</label>
-      <input type="text" name="marca" class="form-control" list="marcas-list" value="<%= vehiculo.marca || '' %>" placeholder="Selecciona o escribe una marca" autocomplete="off" required>
+      <label class="form-label" for="veh-marca">Marca *</label>
+      <input type="text" name="marca" id="veh-marca" class="form-control" list="marcas-list" value="<%= vehiculo.marca || '' %>" placeholder="Selecciona o escribe una marca" autocomplete="off" required>
       <% if (typeof marcas !== 'undefined' && marcas.length) { %>
       <datalist id="marcas-list">
         <% marcas.forEach(m => { %><option value="<%= m %>"></option><% }) %>
@@ -35,24 +35,24 @@
       <% } %>
     </div>
     <div class="col-md-4">
-      <label class="form-label">Modelo *</label>
-      <input type="text" name="modelo" class="form-control" value="<%= vehiculo.modelo || '' %>" required>
+      <label class="form-label" for="veh-modelo">Modelo *</label>
+      <input type="text" name="modelo" id="veh-modelo" class="form-control" value="<%= vehiculo.modelo || '' %>" required>
     </div>
     <div class="col-md-2">
-      <label class="form-label">Ano</label>
-      <input type="number" name="ano" class="form-control" value="<%= vehiculo.ano || '' %>" min="1900" max="2099">
+      <label class="form-label" for="veh-ano">Ano</label>
+      <input type="number" name="ano" id="veh-ano" class="form-control" value="<%= vehiculo.ano || '' %>" min="1900" max="2099">
     </div>
     <div class="col-md-2">
-      <label class="form-label">Color</label>
-      <input type="text" name="color" class="form-control" value="<%= vehiculo.color || '' %>">
+      <label class="form-label" for="veh-color">Color</label>
+      <input type="text" name="color" id="veh-color" class="form-control" value="<%= vehiculo.color || '' %>">
     </div>
     <div class="col-md-6">
-      <label class="form-label">VIN / Serial</label>
-      <input type="text" name="vin" class="form-control" value="<%= vehiculo.vin || '' %>">
+      <label class="form-label" for="veh-vin">VIN / Serial</label>
+      <input type="text" name="vin" id="veh-vin" class="form-control" value="<%= vehiculo.vin || '' %>">
     </div>
     <div class="col-md-6">
-      <label class="form-label">Notas</label>
-      <input type="text" name="notas" class="form-control" value="<%= vehiculo.notas || '' %>">
+      <label class="form-label" for="veh-notas">Notas</label>
+      <input type="text" name="notas" id="veh-notas" class="form-control" value="<%= vehiculo.notas || '' %>">
     </div>
   </div>
   <div class="mt-4">

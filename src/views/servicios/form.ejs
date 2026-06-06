@@ -14,8 +14,8 @@
 <form method="POST" action="/servicios<%= servicio.id ? `/${servicio.id}/editar` : '/crear' %>">
   <div class="row g-3">
     <div class="col-12 col-md-6">
-      <label class="form-label">Vehiculo *</label>
-      <select name="vehiculo_id" class="form-select" required>
+      <label class="form-label" for="srv-vehiculo">Vehiculo *</label>
+      <select name="vehiculo_id" id="srv-vehiculo" class="form-select" required>
         <option value="">-- Seleccionar vehiculo --</option>
         <% vehiculos.forEach(v => { %>
         <option value="<%= v.id %>" <%= String(servicio.vehiculo_id) === String(v.id) ? 'selected' : '' %>><%= v.placa %> - <%= v.marca %> <%= v.modelo %> (<%= v.cliente_nombre %>)</option>
@@ -23,8 +23,8 @@
       </select>
     </div>
     <div class="col-12 col-md-6">
-      <label class="form-label">Mecanico asignado</label>
-      <select name="mecanico_id" class="form-select">
+      <label class="form-label" for="srv-mecanico">Mecanico asignado</label>
+      <select name="mecanico_id" id="srv-mecanico" class="form-select">
         <option value="">-- Sin asignar --</option>
         <% mecanicos.forEach(m => { %>
         <option value="<%= m.id %>" <%= String(servicio.mecanico_id) === String(m.id) ? 'selected' : '' %>><%= m.nombre %></option>
@@ -32,32 +32,32 @@
       </select>
     </div>
     <div class="col-6 col-md-3">
-      <label class="form-label">Estado</label>
-      <select name="estado" class="form-select">
+      <label class="form-label" for="srv-estado">Estado</label>
+      <select name="estado" id="srv-estado" class="form-select">
         <% estadosCanonicos.forEach(e => { %>
         <option value="<%= e %>" <%= (servicio.estado || 'Pendiente') === e ? 'selected' : '' %>><%= e %></option>
         <% }) %>
       </select>
     </div>
     <div class="col-6 col-md-3">
-      <label class="form-label">Kilometraje</label>
-      <input type="number" name="kilometraje" class="form-control" value="<%= servicio.kilometraje || '' %>">
+      <label class="form-label" for="srv-km">Kilometraje</label>
+      <input type="number" name="kilometraje" id="srv-km" class="form-control" value="<%= servicio.kilometraje || '' %>">
     </div>
     <div class="col-6 col-md-3">
-      <label class="form-label">Tecnico</label>
-      <input type="text" name="tecnico" class="form-control" value="<%= servicio.tecnico || '' %>">
+      <label class="form-label" for="srv-tecnico">Tecnico</label>
+      <input type="text" name="tecnico" id="srv-tecnico" class="form-control" value="<%= servicio.tecnico || '' %>">
     </div>
     <div class="col-6 col-md-3">
-      <label class="form-label">Costo mano de obra ($)</label>
-      <input type="number" name="costo" class="form-control" step="0.01" min="0" value="<%= servicio.costo || '0' %>">
+      <label class="form-label" for="srv-costo">Costo mano de obra ($)</label>
+      <input type="number" name="costo" id="srv-costo" class="form-control" step="0.01" min="0" value="<%= servicio.costo || '0' %>">
     </div>
     <div class="col-12">
-      <label class="form-label">Descripcion del servicio *</label>
-      <textarea name="descripcion" class="form-control" rows="2" required><%= servicio.descripcion || '' %></textarea>
+      <label class="form-label" for="srv-descripcion">Descripcion del servicio *</label>
+      <textarea name="descripcion" id="srv-descripcion" class="form-control" rows="2" required><%= servicio.descripcion || '' %></textarea>
     </div>
     <div class="col-12">
-      <label class="form-label">Notas</label>
-      <textarea name="notas" class="form-control" rows="2"><%= servicio.notas || '' %></textarea>
+      <label class="form-label" for="srv-notas">Notas</label>
+      <textarea name="notas" id="srv-notas" class="form-control" rows="2"><%= servicio.notas || '' %></textarea>
     </div>
   </div>
 
@@ -67,14 +67,14 @@
     <% const tareasForm = servicio.tareas || []; %>
     <% if (tareasForm.length === 0) { %>
     <div class="input-group mb-2 fila-tarea">
-      <input type="text" name="tarea_descripcion" class="form-control" placeholder="Ej: Cambio de aceite, revisar frenos...">
-      <button type="button" class="btn btn-outline-danger btn-quitar-tarea"><i class="bi bi-x-lg"></i></button>
+      <input type="text" name="tarea_descripcion" class="form-control" aria-label="Descripcion de la tarea" placeholder="Ej: Cambio de aceite, revisar frenos...">
+      <button type="button" class="btn btn-outline-danger btn-quitar-tarea" aria-label="Quitar tarea"><i class="bi bi-x-lg"></i></button>
     </div>
     <% } else { %>
     <% tareasForm.forEach(t => { %>
     <div class="input-group mb-2 fila-tarea">
-      <input type="text" name="tarea_descripcion" class="form-control" value="<%= t.descripcion || t %>" placeholder="Ej: Cambio de aceite, revisar frenos...">
-      <button type="button" class="btn btn-outline-danger btn-quitar-tarea"><i class="bi bi-x-lg"></i></button>
+      <input type="text" name="tarea_descripcion" class="form-control" aria-label="Descripcion de la tarea" value="<%= t.descripcion || t %>" placeholder="Ej: Cambio de aceite, revisar frenos...">
+      <button type="button" class="btn btn-outline-danger btn-quitar-tarea" aria-label="Quitar tarea"><i class="bi bi-x-lg"></i></button>
     </div>
     <% }) %>
     <% } %>
@@ -83,8 +83,8 @@
 
   <template id="tmpl-tarea">
     <div class="input-group mb-2 fila-tarea">
-      <input type="text" name="tarea_descripcion" class="form-control" placeholder="Ej: Cambio de aceite, revisar frenos...">
-      <button type="button" class="btn btn-outline-danger btn-quitar-tarea"><i class="bi bi-x-lg"></i></button>
+      <input type="text" name="tarea_descripcion" class="form-control" aria-label="Descripcion de la tarea" placeholder="Ej: Cambio de aceite, revisar frenos...">
+      <button type="button" class="btn btn-outline-danger btn-quitar-tarea" aria-label="Quitar tarea"><i class="bi bi-x-lg"></i></button>
     </div>
   </template>
 
@@ -107,16 +107,16 @@
         <% items.forEach((it, i) => { %>
         <tr class="fila-item">
           <td>
-            <select name="item_tipo" class="form-select form-select-sm">
+            <select name="item_tipo" class="form-select form-select-sm" aria-label="Tipo de repuesto">
               <option value="Repuesto" <%= it.tipo === 'Repuesto' ? 'selected' : '' %>>Repuesto</option>
               <option value="Servicio" <%= it.tipo === 'Servicio' ? 'selected' : '' %>>Servicio</option>
             </select>
           </td>
-          <td><input type="text" name="item_descripcion" class="form-control form-control-sm" value="<%= it.descripcion || '' %>"></td>
-          <td><input type="number" name="item_cantidad" class="form-control form-control-sm item-calc" step="0.01" min="0.01" value="<%= it.cantidad || 1 %>"></td>
-          <td><input type="number" name="item_precio" class="form-control form-control-sm item-calc" step="0.01" min="0" value="<%= it.precio_unitario || 0 %>"></td>
+          <td><input type="text" name="item_descripcion" class="form-control form-control-sm" aria-label="Descripcion del repuesto" value="<%= it.descripcion || '' %>"></td>
+          <td><input type="number" name="item_cantidad" class="form-control form-control-sm item-calc" aria-label="Cantidad" step="0.01" min="0.01" value="<%= it.cantidad || 1 %>"></td>
+          <td><input type="number" name="item_precio" class="form-control form-control-sm item-calc" aria-label="Precio unitario" step="0.01" min="0" value="<%= it.precio_unitario || 0 %>"></td>
           <td class="item-subtotal text-end fw-bold">$<%= ((it.cantidad || 1) * (it.precio_unitario || 0)).toFixed(2) %></td>
-          <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar-item"><i class="bi bi-x-lg"></i></button></td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar-item" aria-label="Quitar repuesto"><i class="bi bi-x-lg"></i></button></td>
         </tr>
         <% }) %>
       </tbody>
@@ -134,16 +134,16 @@
   <template id="tmpl-item">
     <tr class="fila-item">
       <td>
-        <select name="item_tipo" class="form-select form-select-sm">
+        <select name="item_tipo" class="form-select form-select-sm" aria-label="Tipo de repuesto">
           <option value="Repuesto">Repuesto</option>
           <option value="Servicio">Servicio</option>
         </select>
       </td>
-      <td><input type="text" name="item_descripcion" class="form-control form-control-sm"></td>
-      <td><input type="number" name="item_cantidad" class="form-control form-control-sm item-calc" step="0.01" min="0.01" value="1"></td>
-      <td><input type="number" name="item_precio" class="form-control form-control-sm item-calc" step="0.01" min="0" value="0"></td>
+      <td><input type="text" name="item_descripcion" class="form-control form-control-sm" aria-label="Descripcion del repuesto"></td>
+      <td><input type="number" name="item_cantidad" class="form-control form-control-sm item-calc" aria-label="Cantidad" step="0.01" min="0.01" value="1"></td>
+      <td><input type="number" name="item_precio" class="form-control form-control-sm item-calc" aria-label="Precio unitario" step="0.01" min="0" value="0"></td>
       <td class="item-subtotal text-end fw-bold">$0.00</td>
-      <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar-item"><i class="bi bi-x-lg"></i></button></td>
+      <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar-item" aria-label="Quitar repuesto"><i class="bi bi-x-lg"></i></button></td>
     </tr>
   </template>
 

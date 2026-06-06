@@ -39,8 +39,8 @@ router.post('/password', (req, res) => {
     errors.push('La contrasena actual es incorrecta');
   }
 
-  if (!password || password.length < 4) {
-    errors.push('La nueva clave debe tener al menos 4 caracteres');
+  if (!password || password.length < 8) {
+    errors.push('La nueva clave debe tener al menos 8 caracteres');
   }
 
   if (password && password !== password2) {

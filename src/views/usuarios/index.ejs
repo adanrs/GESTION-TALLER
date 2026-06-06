@@ -1,36 +1,40 @@
 <%- include('../partials/header') %>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2><i class="bi bi-people-fill"></i> Usuarios</h2>
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0"><i class="bi bi-people-fill"></i> Usuarios</h2>
   <a href="/usuarios/crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo Usuario</a>
 </div>
 
 <div class="card">
   <div class="card-body p-0">
+    <% if (usuarios.length) { %>
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
+      <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>Nombre</th>
-            <th>Usuario</th>
+            <th class="d-none d-md-table-cell">Usuario</th>
             <th>Rol</th>
-            <th>Estado</th>
-            <th>Registro</th>
+            <th class="d-none d-sm-table-cell">Estado</th>
+            <th class="d-none d-lg-table-cell">Registro</th>
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <% usuarios.forEach(u => { %>
           <tr>
-            <td><%= u.nombre %></td>
-            <td><code><%= u.usuario %></code></td>
+            <td>
+              <span class="fw-semibold"><%= u.nombre %></span>
+              <div class="d-md-none small text-muted"><code><%= u.usuario %></code></div>
+            </td>
+            <td class="d-none d-md-table-cell"><code><%= u.usuario %></code></td>
             <td><span class="badge bg-<%= u.rol === 'admin' ? 'danger' : 'primary' %>"><%= u.rol %></span></td>
-            <td><span class="badge bg-<%= u.activo ? 'success' : 'secondary' %>"><%= u.activo ? 'Activo' : 'Inactivo' %></span></td>
-            <td><%= u.fecha_registro ? u.fecha_registro.substring(0, 10) : '' %></td>
-            <td class="text-end">
-              <a href="/usuarios/<%= u.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+            <td class="d-none d-sm-table-cell"><span class="badge bg-<%= u.activo ? 'success' : 'secondary' %>"><%= u.activo ? 'Activo' : 'Inactivo' %></span></td>
+            <td class="d-none d-lg-table-cell text-nowrap"><%= u.fecha_registro ? u.fecha_registro.substring(0, 10) : '' %></td>
+            <td class="text-end text-nowrap">
+              <a href="/usuarios/<%= u.id %>/editar" class="btn btn-sm btn-outline-primary" title="Editar" aria-label="Editar usuario"><i class="bi bi-pencil"></i></a>
               <form method="POST" action="/usuarios/<%= u.id %>/eliminar" class="d-inline" onsubmit="return confirm('Eliminar este usuario?')">
-                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar usuario"><i class="bi bi-trash"></i></button>
               </form>
             </td>
           </tr>
@@ -38,6 +42,15 @@
         </tbody>
       </table>
     </div>
+    <% } else { %>
+      <div class="text-center text-muted p-5">
+        <i class="bi bi-people-fill fs-1 d-block mb-2"></i>
+        <p class="mb-0">Aun no hay usuarios registrados.</p>
+        <a href="/usuarios/crear" class="btn btn-sm btn-primary mt-2">
+          <i class="bi bi-plus-lg"></i> Crear el primero
+        </a>
+      </div>
+    <% } %>
   </div>
 </div>
 
