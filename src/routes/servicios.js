@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const estados = require('../lib/estados');
+const audit   = require('../lib/auditoria');
 
 // ---------------------------------------------------------------------------
 // HELPERS
@@ -38,8 +40,56 @@ function parseTareas(body) {
     .filter(d => d.length > 0);
 }
 
-// Estados validos de una orden (fuente de verdad)
-const ESTADOS_VALIDOS = ['Pendiente', 'Asignada', 'En proceso', 'Completada', 'Por cobrar', 'Cobrada', 'Cancelada'];
+// Estados validos de una orden: delegamos a la fuente de verdad centralizada
+const ESTADOS_VALIDOS = estados.ESTADOS_ORDEN;
+
+// ---------------------------------------------------------------------------
+// HELPERS DE NEGOCIO
+// ---------------------------------------------------------------------------
+
+/**
+ * Genera el numero de folio para una nueva orden de taller.
+ * Formato: OT-YYYYNNNN  (ej. OT-20260001)
+ * La secuencia reinicia por anio y se basa en el ultimo id registrado ese anio.
+ */
+function generarNumeroOrden() {
+  const year = new Date().getFullYear();
+  const last = db
+    .prepare('SELECT numero FROM servicios WHERE numero LIKE ? ORDER BY id DESC LIMIT 1')
+    .get(`OT-${year}%`);
+  let seq = 1;
+  if (last) {
+    // numero tiene forma OT-YYYYNNNN -> los 4 ultimos chars de la parte tras el guion son la secuencia
+    const parte = last.numero.slice(3); // "YYYYNNNN"
+    seq = parseInt(parte.slice(4), 10) + 1;
+  }
+  return `OT-${year}${String(seq).padStart(4, '0')}`;
+}
+
+/**
+ * Calcula el total de una orden: costo (mano de obra) + suma de items.
+ * Devuelve un numero >= 0.
+ */
+function calcularTotalOrden(servId, costoServicio) {
+  const row = db
+    .prepare('SELECT COALESCE(SUM(cantidad * precio_unitario), 0) AS total_items FROM servicio_items WHERE servicio_id = ?')
+    .get(servId);
+  return (parseFloat(costoServicio) || 0) + (row ? row.total_items : 0);
+}
+
+/**
+ * Devuelve true si el usuario puede operar sobre la orden:
+ *   - Es admin (encargado), O
+ *   - Es tecnico Y la orden le esta asignada.
+ *
+ * @param {object} servicio  - Fila de la tabla servicios (debe tener mecanico_id).
+ * @param {object} usuario   - req.session.usuario ({id, rol, ...}).
+ */
+function puedeOperarOrden(servicio, usuario) {
+  if (!usuario) return false;
+  if (usuario.rol === 'admin') return true;
+  return usuario.rol === 'tecnico' && servicio.mecanico_id === usuario.id;
+}
 
 /**
  * Guard: solo el encargado (admin) puede continuar.
@@ -64,13 +114,15 @@ function getMecanicos() {
 }
 
 /**
- * Obtiene la lista de vehiculos con cliente para pasar a los formularios.
+ * Obtiene la lista de vehiculos ACTIVOS con cliente para pasar a los formularios.
+ * Los vehiculos con activo=0 (archivados) no aparecen en el dropdown.
  */
 function getVehiculos() {
   return db.prepare(`
     SELECT v.id, v.placa, v.marca, v.modelo, c.nombre as cliente_nombre
     FROM vehiculos v
     JOIN clientes c ON v.cliente_id = c.id
+    WHERE v.activo = 1
     ORDER BY c.nombre, v.placa
   `).all();
 }
@@ -174,18 +226,21 @@ router.post('/crear', soloAdmin, (req, res) => {
     estadoFinal = 'Asignada';
   }
 
+  const numero = generarNumeroOrden();
+
   const insertServ = db.prepare(
-    'INSERT INTO servicios (vehiculo_id, descripcion, kilometraje, tecnico, estado, costo, notas, mecanico_id) VALUES (?,?,?,?,?,?,?,?)'
+    'INSERT INTO servicios (numero, vehiculo_id, descripcion, kilometraje, tecnico, estado, costo, notas, mecanico_id) VALUES (?,?,?,?,?,?,?,?,?)'
   );
   const insertItem  = db.prepare('INSERT INTO servicio_items (servicio_id, tipo, descripcion, cantidad, precio_unitario) VALUES (?,?,?,?,?)');
   const insertTarea = db.prepare('INSERT INTO servicio_tareas (servicio_id, descripcion, completado, orden) VALUES (?,?,0,?)');
 
+  let servId;
   db.transaction(() => {
     const result = insertServ.run(
-      vehiculo_id, descripcion.trim(), kilometraje || null,
+      numero, vehiculo_id, descripcion.trim(), kilometraje || null,
       tecnico?.trim(), estadoFinal, costo || 0, notas?.trim(), mecanico_id
     );
-    const servId = result.lastInsertRowid;
+    servId = result.lastInsertRowid;
     for (const it of items) {
       insertItem.run(servId, it.tipo, it.descripcion, it.cantidad, it.precio_unitario);
     }
@@ -194,7 +249,17 @@ router.post('/crear', soloAdmin, (req, res) => {
     }
   })();
 
-  res.flash('success', 'Servicio registrado');
+  audit.registrar({
+    usuario:         req.session.usuario,
+    accion:          'crear',
+    entidad:         'servicio',
+    entidad_id:      servId,
+    estado_anterior: null,
+    estado_nuevo:    estadoFinal,
+    detalle:         `Orden ${numero} creada`
+  });
+
+  res.flash('success', `Orden ${numero} registrada`);
   res.redirect('/servicios');
 });
 
@@ -237,6 +302,10 @@ router.get('/:id', (req, res) => {
     'SELECT * FROM servicio_comentarios WHERE servicio_id = ? ORDER BY fecha DESC, id DESC'
   ).all(servicio.id);
 
+  const fotos = db.prepare(
+    'SELECT * FROM fotos WHERE servicio_id = ? ORDER BY fecha DESC, id DESC'
+  ).all(servicio.id);
+
   res.render('servicios/detalle', {
     title: 'Servicio',
     servicio,
@@ -245,7 +314,8 @@ router.get('/:id', (req, res) => {
     tareas,
     totalTareas,
     tareasCompletadas,
-    comentarios
+    comentarios,
+    fotos
   });
 });
 
@@ -299,6 +369,27 @@ router.post('/:id/editar', soloAdmin, (req, res) => {
     estadoFinal = 'Asignada';
   }
 
+  // Leer estado actual para validar la transicion
+  const servicioActual = db.prepare('SELECT estado FROM servicios WHERE id = ?').get(req.params.id);
+  if (!servicioActual) {
+    return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
+  }
+  const estadoAnterior = servicioActual.estado;
+
+  if (!estados.puedeTransicionar(estadoAnterior, estadoFinal)) {
+    res.flash('danger', `No se puede pasar de "${estadoAnterior}" a "${estadoFinal}"`);
+    const servRerender = db.prepare('SELECT * FROM servicios WHERE id = ?').get(req.params.id);
+    servRerender.items  = db.prepare('SELECT * FROM servicio_items  WHERE servicio_id = ?').all(req.params.id);
+    servRerender.tareas = db.prepare('SELECT * FROM servicio_tareas WHERE servicio_id = ? ORDER BY orden, id').all(req.params.id);
+    return res.render('servicios/form', {
+      title:    'Editar Servicio',
+      servicio: servRerender,
+      vehiculos: getVehiculos(),
+      mecanicos: getMecanicos(),
+      errors:   []
+    });
+  }
+
   // Mapa de tareas previas para conservar progreso del mecanico
   const prevTareas = db.prepare('SELECT * FROM servicio_tareas WHERE servicio_id = ?').all(req.params.id);
   const prevMap    = new Map(prevTareas.map(t => [t.descripcion.toLowerCase().trim(), t]));
@@ -326,6 +417,19 @@ router.post('/:id/editar', soloAdmin, (req, res) => {
       insertTarea.run(req.params.id, tareas[i], completado, tecnicoTarea, fechaComp, i);
     }
   })();
+
+  // Auditar solo si el estado cambio efectivamente
+  if (estadoAnterior !== estadoFinal) {
+    audit.registrar({
+      usuario:         req.session.usuario,
+      accion:          'cambio_estado',
+      entidad:         'servicio',
+      entidad_id:      req.params.id,
+      estado_anterior: estadoAnterior,
+      estado_nuevo:    estadoFinal,
+      detalle:         'Cambio de estado via edicion de orden'
+    });
+  }
 
   res.flash('success', 'Servicio actualizado');
   res.redirect(`/servicios/${req.params.id}`);
@@ -427,6 +531,12 @@ router.post('/:id/completar', (req, res) => {
     });
   }
 
+  const estadoNuevoComp = 'Completada';
+  if (!estados.puedeTransicionar(servicio.estado, estadoNuevoComp)) {
+    res.flash('danger', `No se puede pasar de "${servicio.estado}" a "${estadoNuevoComp}"`);
+    return res.redirect(`/servicios/${id}`);
+  }
+
   // Validar que todas las tareas esten completadas (solo si hay tareas)
   const tareas = db.prepare('SELECT * FROM servicio_tareas WHERE servicio_id = ?').all(id);
   if (tareas.length > 0) {
@@ -441,7 +551,133 @@ router.post('/:id/completar', (req, res) => {
   db.prepare("UPDATE servicios SET estado='Completada', fecha_completado=? WHERE id=?")
     .run(fechaAhora, id);
 
+  audit.registrar({
+    usuario:         usuario,
+    accion:          'cambio_estado',
+    entidad:         'servicio',
+    entidad_id:      id,
+    estado_anterior: servicio.estado,
+    estado_nuevo:    estadoNuevoComp,
+    detalle:         'Orden completada'
+  });
+
   res.flash('success', 'Orden marcada como completada');
+  res.redirect(`/servicios/${id}`);
+});
+
+// ---------------------------------------------------------------------------
+// INICIAR ORDEN POST /:id/iniciar
+// (admin o mecanico asignado) — transicion Pendiente|Asignada -> En proceso
+// ---------------------------------------------------------------------------
+router.post('/:id/iniciar', (req, res) => {
+  const id      = req.params.id;
+  const usuario = req.session.usuario;
+
+  const servicio = db.prepare('SELECT * FROM servicios WHERE id = ?').get(id);
+  if (!servicio) {
+    return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
+  }
+
+  if (!puedeOperarOrden(servicio, usuario)) {
+    return res.status(403).render('partials/error', {
+      title: 'Acceso denegado',
+      message: 'No tienes permiso para operar esta orden.'
+    });
+  }
+
+  const estadoNuevo = 'En proceso';
+  if (!estados.puedeTransicionar(servicio.estado, estadoNuevo)) {
+    res.flash('danger', `No se puede pasar de "${servicio.estado}" a "${estadoNuevo}"`);
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  db.prepare("UPDATE servicios SET estado='En proceso' WHERE id=?").run(id);
+  audit.registrar({
+    usuario:         usuario,
+    accion:          'cambio_estado',
+    entidad:         'servicio',
+    entidad_id:      id,
+    estado_anterior: servicio.estado,
+    estado_nuevo:    estadoNuevo,
+    detalle:         'Orden iniciada'
+  });
+  res.flash('success', 'Orden marcada en proceso');
+  res.redirect(`/servicios/${id}`);
+});
+
+// ---------------------------------------------------------------------------
+// AGREGAR ITEM POST /:id/items
+// (admin o mecanico asignado) — repuesto o material para la orden
+// ---------------------------------------------------------------------------
+router.post('/:id/items', (req, res) => {
+  const id      = req.params.id;
+  const usuario = req.session.usuario;
+
+  const servicio = db.prepare('SELECT * FROM servicios WHERE id = ?').get(id);
+  if (!servicio) {
+    return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
+  }
+
+  if (!puedeOperarOrden(servicio, usuario)) {
+    return res.status(403).render('partials/error', {
+      title: 'Acceso denegado',
+      message: 'No tienes permiso para operar esta orden.'
+    });
+  }
+
+  const tipo        = (req.body.tipo || 'Repuesto').trim();
+  const descripcion = (req.body.descripcion || '').trim();
+  const cantidad    = parseFloat(req.body.cantidad) || 1;
+
+  if (!descripcion) {
+    res.flash('danger', 'La descripcion del repuesto es obligatoria');
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  // Regla de precio: el mecanico no maneja precios -> siempre 0
+  const precio_unitario = usuario.rol === 'tecnico'
+    ? 0
+    : parseFloat(req.body.precio_unitario) || 0;
+
+  db.prepare(
+    'INSERT INTO servicio_items (servicio_id, tipo, descripcion, cantidad, precio_unitario) VALUES (?,?,?,?,?)'
+  ).run(id, tipo, descripcion, cantidad, precio_unitario);
+
+  res.flash('success', 'Repuesto agregado');
+  res.redirect(`/servicios/${id}`);
+});
+
+// ---------------------------------------------------------------------------
+// ELIMINAR ITEM POST /:id/items/:itemId/eliminar
+// (admin o mecanico asignado)
+// ---------------------------------------------------------------------------
+router.post('/:id/items/:itemId/eliminar', (req, res) => {
+  const id     = req.params.id;
+  const itemId = req.params.itemId;
+  const usuario = req.session.usuario;
+
+  const servicio = db.prepare('SELECT * FROM servicios WHERE id = ?').get(id);
+  if (!servicio) {
+    return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
+  }
+
+  if (!puedeOperarOrden(servicio, usuario)) {
+    return res.status(403).render('partials/error', {
+      title: 'Acceso denegado',
+      message: 'No tienes permiso para operar esta orden.'
+    });
+  }
+
+  // Verificar que el item pertenezca a esta orden antes de eliminar
+  const item = db.prepare('SELECT id FROM servicio_items WHERE id = ? AND servicio_id = ?').get(itemId, id);
+  if (!item) {
+    res.flash('danger', 'Repuesto no encontrado en esta orden');
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  db.prepare('DELETE FROM servicio_items WHERE id = ?').run(itemId);
+
+  res.flash('success', 'Repuesto eliminado');
   res.redirect(`/servicios/${id}`);
 });
 
@@ -450,12 +686,35 @@ router.post('/:id/completar', (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/:id/por-cobrar', soloAdmin, (req, res) => {
   const id = req.params.id;
-  const servicio = db.prepare('SELECT id FROM servicios WHERE id = ?').get(id);
+  const servicio = db.prepare('SELECT id, estado, costo FROM servicios WHERE id = ?').get(id);
   if (!servicio) {
     return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
   }
 
+  const estadoNuevoPC = 'Por cobrar';
+  if (!estados.puedeTransicionar(servicio.estado, estadoNuevoPC)) {
+    res.flash('danger', `No se puede pasar de "${servicio.estado}" a "${estadoNuevoPC}"`);
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  const total = calcularTotalOrden(id, servicio.costo);
+  if (total <= 0) {
+    res.flash('danger', 'No se puede cobrar una orden sin monto. Asigna precios primero.');
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  const estadoAnteriorPC = servicio.estado;
   db.prepare("UPDATE servicios SET estado='Por cobrar' WHERE id=?").run(id);
+
+  audit.registrar({
+    usuario:         req.session.usuario,
+    accion:          'cambio_estado',
+    entidad:         'servicio',
+    entidad_id:      id,
+    estado_anterior: estadoAnteriorPC,
+    estado_nuevo:    estadoNuevoPC,
+    detalle:         `Marcada por cobrar (total: ${total.toFixed(2)})`
+  });
 
   res.flash('success', 'Orden marcada como por cobrar');
   res.redirect(`/servicios/${id}`);
@@ -466,14 +725,37 @@ router.post('/:id/por-cobrar', soloAdmin, (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/:id/cobrar', soloAdmin, (req, res) => {
   const id = req.params.id;
-  const servicio = db.prepare('SELECT id FROM servicios WHERE id = ?').get(id);
+  const servicio = db.prepare('SELECT id, estado, costo FROM servicios WHERE id = ?').get(id);
   if (!servicio) {
     return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
   }
 
+  const estadoNuevoCob = 'Cobrada';
+  if (!estados.puedeTransicionar(servicio.estado, estadoNuevoCob)) {
+    res.flash('danger', `No se puede pasar de "${servicio.estado}" a "${estadoNuevoCob}"`);
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  const total = calcularTotalOrden(id, servicio.costo);
+  if (total <= 0) {
+    res.flash('danger', 'No se puede cobrar una orden sin monto. Asigna precios primero.');
+    return res.redirect(`/servicios/${id}`);
+  }
+
+  const estadoAnteriorCob = servicio.estado;
   const fechaAhora = new Date().toLocaleString('es-CR');
   db.prepare("UPDATE servicios SET estado='Cobrada', cobrado=1, fecha_cobro=? WHERE id=?")
     .run(fechaAhora, id);
+
+  audit.registrar({
+    usuario:         req.session.usuario,
+    accion:          'cambio_estado',
+    entidad:         'servicio',
+    entidad_id:      id,
+    estado_anterior: estadoAnteriorCob,
+    estado_nuevo:    estadoNuevoCob,
+    detalle:         `Orden cobrada (total: ${total.toFixed(2)})`
+  });
 
   res.flash('success', 'Orden marcada como cobrada');
   res.redirect(`/servicios/${id}`);

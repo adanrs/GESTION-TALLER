@@ -7,8 +7,8 @@ RUN npm ci --only=production
 
 COPY . .
 
-# Create data directory for SQLite
-RUN mkdir -p /app/data
+# Create data directory for SQLite y la carpeta de fotos subidas (dentro del volumen)
+RUN mkdir -p /app/data/uploads
 
 EXPOSE 9900
 

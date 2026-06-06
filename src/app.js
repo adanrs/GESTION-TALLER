@@ -48,6 +48,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Helper de badges de estado disponible en todas las vistas
+const { badgeEstado } = require('./lib/estados');
+app.use((req, res, next) => { res.locals.badgeEstado = badgeEstado; next(); });
+
 // Roles y control de acceso por rol
 app.use((req, res, next) => {
   const rol = req.session.usuario?.rol;
@@ -55,11 +59,14 @@ app.use((req, res, next) => {
   res.locals.esMecanico = rol === 'tecnico';
 
   // El mecanico (rol tecnico) solo puede ver sus ordenes, su perfil y autenticacion.
+  // Excepcion: puede ver el HISTORIAL TECNICO de un vehiculo (sin precios) en /vehiculos/:id/historial.
   // Cualquier otra seccion (clientes, vehiculos, cotizaciones, usuarios, configuracion, reportes) queda bloqueada.
   if (rol === 'tecnico') {
     const permitido = req.path.startsWith('/servicios') ||
                       req.path.startsWith('/perfil') ||
-                      req.path.startsWith('/auth');
+                      req.path.startsWith('/fotos') ||
+                      req.path.startsWith('/auth') ||
+                      /^\/vehiculos\/\d+\/historial\/?$/.test(req.path);
     if (req.path === '/') return res.redirect('/servicios');
     if (!permitido) {
       return res.status(403).render('partials/error', {
@@ -80,6 +87,7 @@ app.use('/cotizaciones', require('./routes/cotizaciones'));
 app.use('/usuarios', require('./routes/usuarios'));
 app.use('/perfil', require('./routes/perfil'));
 app.use('/reportes', require('./routes/reportes'));
+app.use('/fotos', require('./routes/fotos'));
 app.use('/accesos', require('./routes/accesos'));
 app.use('/configuracion', require('./routes/configuracion'));
 

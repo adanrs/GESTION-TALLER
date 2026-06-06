@@ -96,15 +96,7 @@
             <td class="d-none d-md-table-cell"><%= s.cliente_nombre %></td>
             <td class="d-none d-lg-table-cell"><%= s.descripcion ? s.descripcion.substring(0, 60) : '' %></td>
             <td>
-              <% if (s.estado === 'Completado') { %>
-                <span class="badge bg-success"><%= s.estado %></span>
-              <% } else if (s.estado === 'En Proceso') { %>
-                <span class="badge bg-warning text-dark"><%= s.estado %></span>
-              <% } else if (s.estado === 'Cancelado') { %>
-                <span class="badge bg-danger"><%= s.estado %></span>
-              <% } else { %>
-                <span class="badge bg-secondary"><%= s.estado %></span>
-              <% } %>
+              <span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span>
             </td>
           </tr>
           <% }) %>

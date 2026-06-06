@@ -3,6 +3,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2><i class="bi bi-car-front"></i> <%= vehiculo.placa %> - <%= vehiculo.marca %> <%= vehiculo.modelo %></h2>
   <div class="d-flex gap-2 flex-wrap">
+    <a href="/vehiculos/<%= vehiculo.id %>/historial" class="btn btn-outline-info"><i class="bi bi-clock-history"></i> Ver linea de tiempo</a>
     <a href="/reportes/vehiculo/<%= vehiculo.id %>" class="btn btn-outline-dark" target="_blank"><i class="bi bi-file-earmark-pdf"></i> Reporte PDF</a>
     <a href="/vehiculos/<%= vehiculo.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
     <a href="/clientes/<%= vehiculo.cliente_id %>" class="btn btn-outline-secondary">Ver Cliente</a>
@@ -53,22 +54,17 @@
         <tbody>
           <% servicios.forEach(s => { %>
           <tr>
-            <td><%= s.fecha ? s.fecha.substring(0, 10) : '' %></td>
+            <td class="text-nowrap">
+              <%= s.fecha ? s.fecha.substring(0, 10) : '' %>
+              <% if (s.numero) { %><div><code><%= s.numero %></code></div><% } %>
+            </td>
             <td><%= s.descripcion %></td>
             <td><%= s.kilometraje || '-' %></td>
             <td><%= s.mecanico_nombre || '-' %></td>
             <td>$<%= (s.costo || 0).toFixed(2) %></td>
             <td>$<%= (s.total_repuestos || 0).toFixed(2) %></td>
             <td>
-              <% if (s.estado === 'Completado') { %>
-                <span class="badge bg-success"><%= s.estado %></span>
-              <% } else if (s.estado === 'En Proceso') { %>
-                <span class="badge bg-warning text-dark"><%= s.estado %></span>
-              <% } else if (s.estado === 'Cancelado') { %>
-                <span class="badge bg-danger"><%= s.estado %></span>
-              <% } else { %>
-                <span class="badge bg-secondary"><%= s.estado %></span>
-              <% } %>
+              <span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span>
             </td>
             <td><a href="/servicios/<%= s.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
           </tr>
@@ -98,7 +94,7 @@
             <td><a href="/cotizaciones/<%= c.id %>"><%= c.numero %></a></td>
             <td><%= c.fecha ? c.fecha.substring(0, 10) : '' %></td>
             <td>$<%= (c.total || 0).toFixed(2) %></td>
-            <td><span class="badge bg-<%= c.estado === 'Aprobada' ? 'success' : c.estado === 'Rechazada' ? 'danger' : 'secondary' %>"><%= c.estado %></span></td>
+            <td><span class="badge bg-<%= badgeEstado(c.estado) %>"><%= c.estado %></span></td>
             <td><a href="/cotizaciones/<%= c.id %>/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
           </tr>
           <% }) %>
@@ -110,5 +106,92 @@
     <% } %>
   </div>
 </div>
+
+<!-- Fotos -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-images"></i> Fotos</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="/fotos/subir" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+      <input type="hidden" name="vehiculo_id" value="<%= vehiculo.id %>">
+      <div class="col-12 col-md-5">
+        <label class="form-label" for="fotos-veh">Seleccionar fotos</label>
+        <input type="file" id="fotos-veh" name="fotos" multiple accept="image/*" class="form-control" required>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label" for="desc-veh">Descripcion</label>
+        <input type="text" id="desc-veh" name="descripcion" class="form-control" placeholder="Descripcion (opcional)">
+      </div>
+      <div class="col-12 col-md-3 d-grid">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Subir fotos</button>
+      </div>
+      <div class="col-12">
+        <small class="text-muted">JPG, PNG o WEBP, hasta 5MB cada una.</small>
+      </div>
+    </form>
+
+    <% if (fotos && fotos.length) { %>
+    <div class="row g-2">
+      <% fotos.forEach(function(f) { %>
+      <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="position-relative">
+          <img src="/fotos/<%= f.id %>/ver"
+               class="img-fluid rounded foto-thumb border"
+               style="aspect-ratio:1/1; object-fit:cover; width:100%; cursor:pointer"
+               loading="lazy"
+               alt="<%= f.descripcion || f.nombre_original || 'Foto' %>"
+               data-src="/fotos/<%= f.id %>/ver"
+               data-desc="<%= f.descripcion || f.nombre_original || '' %>">
+          <% if (f.descripcion) { %>
+          <div class="small text-muted text-truncate mt-1" title="<%= f.descripcion %>"><%= f.descripcion %></div>
+          <% } %>
+          <form method="POST" action="/fotos/<%= f.id %>/eliminar" class="mt-1"
+                onsubmit="return confirm('Eliminar esta foto?')">
+            <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash"></i> Eliminar</button>
+          </form>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+      <p class="text-muted mb-0">Sin fotos. Agrega la primera.</p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal lightbox de fotos -->
+<div class="modal fade" id="fotoModal" tabindex="-1" aria-hidden="true" aria-labelledby="fotoModalLabel">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="fotoModalLabel">Foto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="fotoModalImg" src="" class="img-fluid rounded" alt="Foto ampliada">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modalEl = document.getElementById('fotoModal');
+  if (!modalEl || typeof bootstrap === 'undefined') return;
+  var modal = new bootstrap.Modal(modalEl);
+  var modalImg = document.getElementById('fotoModalImg');
+  var modalLabel = document.getElementById('fotoModalLabel');
+  document.querySelectorAll('.foto-thumb').forEach(function (img) {
+    img.addEventListener('click', function () {
+      modalImg.src = img.getAttribute('data-src');
+      var desc = img.getAttribute('data-desc') || 'Foto';
+      modalImg.alt = desc;
+      modalLabel.textContent = desc;
+      modal.show();
+    });
+  });
+})();
+</script>
 
 <%- include('../partials/footer') %>

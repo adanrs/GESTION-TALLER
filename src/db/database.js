@@ -123,6 +123,33 @@ db.exec(`
     FOREIGN KEY (servicio_id) REFERENCES servicios(id) ON DELETE CASCADE
   );
 
+  -- Auditoria: traza de cambios de estado, ediciones de precio, archivados, etc.
+  CREATE TABLE IF NOT EXISTS auditoria (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER,
+    usuario TEXT,
+    accion TEXT NOT NULL,
+    entidad TEXT,
+    entidad_id INTEGER,
+    estado_anterior TEXT,
+    estado_nuevo TEXT,
+    detalle TEXT,
+    fecha TEXT DEFAULT (datetime('now','localtime'))
+  );
+
+  -- Fotos adjuntas a un vehiculo y/o a una orden de servicio (archivo en disco)
+  CREATE TABLE IF NOT EXISTS fotos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehiculo_id INTEGER,
+    servicio_id INTEGER,
+    archivo TEXT NOT NULL,
+    nombre_original TEXT,
+    descripcion TEXT,
+    fecha TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE,
+    FOREIGN KEY (servicio_id) REFERENCES servicios(id) ON DELETE CASCADE
+  );
+
   -- Log de accesos: quien y cuando inicio sesion (exitoso o fallido)
   CREATE TABLE IF NOT EXISTS accesos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -156,6 +183,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_servicio_tareas_servicio ON servicio_tareas(servicio_id);
   CREATE INDEX IF NOT EXISTS idx_servicio_comentarios_servicio ON servicio_comentarios(servicio_id);
   CREATE INDEX IF NOT EXISTS idx_accesos_fecha ON accesos(fecha);
+  CREATE INDEX IF NOT EXISTS idx_fotos_vehiculo ON fotos(vehiculo_id);
+  CREATE INDEX IF NOT EXISTS idx_fotos_servicio ON fotos(servicio_id);
+  CREATE INDEX IF NOT EXISTS idx_auditoria_entidad ON auditoria(entidad, entidad_id);
 `);
 
 // Migraciones para bases de datos existentes (agregar columnas nuevas si faltan)
@@ -173,6 +203,11 @@ ensureColumn('servicios', 'cobrado', 'INTEGER DEFAULT 0');
 ensureColumn('servicios', 'fecha_cobro', 'TEXT');
 // Garantia que se ofrece al cliente en la cotizacion
 ensureColumn('cotizaciones', 'garantia', 'TEXT');
+// Soft-delete: archivar en vez de borrar (preserva historial)
+ensureColumn('clientes', 'activo', 'INTEGER DEFAULT 1');
+ensureColumn('vehiculos', 'activo', 'INTEGER DEFAULT 1');
+// Folio legible de la orden de servicio (OT-YYYYNNNN)
+ensureColumn('servicios', 'numero', 'TEXT');
 
 // Create default admin user if no users exist
 const bcrypt = require('bcryptjs');

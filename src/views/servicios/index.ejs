@@ -73,7 +73,10 @@
         <tbody>
           <% servicios.forEach(function(s) { %>
           <tr>
-            <td class="text-nowrap"><%= s.fecha ? s.fecha.substring(0, 10) : '' %></td>
+            <td class="text-nowrap">
+              <%= s.fecha ? s.fecha.substring(0, 10) : '' %>
+              <% if (s.numero) { %><div><code><%= s.numero %></code></div><% } %>
+            </td>
             <td>
               <a href="/vehiculos/<%= s.vehiculo_id %>"><%= s.placa %></a>
               <span class="text-muted"><%= s.marca %> <%= s.modelo %></span>

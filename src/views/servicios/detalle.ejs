@@ -51,7 +51,9 @@
       <div class="col-12 col-md-6"><strong>Descripcion:</strong> <%= servicio.descripcion %></div>
       <div class="col-4 col-md-2"><strong>Km:</strong> <%= servicio.kilometraje || '-' %></div>
       <div class="col-4 col-md-2"><strong>Tecnico:</strong> <%= servicio.tecnico || '-' %></div>
+      <% if (esAdmin) { %>
       <div class="col-4 col-md-2"><strong>Mano de obra:</strong> $<%= (servicio.costo || 0).toFixed(2) %></div>
+      <% } %>
     </div>
     <div class="row g-2 mt-1">
       <div class="col-6 col-md-4"><strong>Fecha:</strong> <%= servicio.fecha ? servicio.fecha.substring(0, 10) : '' %></div>
@@ -72,6 +74,11 @@
 <div class="card mb-4">
   <div class="card-body">
     <div class="d-flex flex-wrap gap-2">
+      <% if ((esAdmin || esMecanico) && (servicio.estado === 'Pendiente' || servicio.estado === 'Asignada')) { %>
+      <form method="POST" action="/servicios/<%= servicio.id %>/iniciar" class="d-inline">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill"></i> Voy a trabajarla</button>
+      </form>
+      <% } %>
       <form method="POST" action="/servicios/<%= servicio.id %>/completar" class="d-inline">
         <button type="submit" class="btn btn-success <%= faltanTareas ? 'opacity-75' : '' %>"
                 <% if (faltanTareas) { %>title="Faltan tareas por completar (<%= tareasCompletadas %>/<%= totalTareas %>)"<% } %>>
@@ -157,53 +164,105 @@
   </div>
 </div>
 
-<% if (items.length) { %>
 <div class="card">
-  <div class="card-header"><h5 class="mb-0">Repuestos / Partes</h5></div>
-  <div class="card-body p-0">
+  <div class="card-header"><h5 class="mb-0"><i class="bi bi-box-seam"></i> Repuestos / Materiales</h5></div>
+  <div class="card-body">
+    <% if (esAdmin || esMecanico) { %>
+    <form method="POST" action="/servicios/<%= servicio.id %>/items" class="row g-2 align-items-end mb-3">
+      <div class="col-12 col-sm-6 col-md-3">
+        <label class="form-label" for="item-tipo">Tipo</label>
+        <select name="tipo" id="item-tipo" class="form-select">
+          <option value="Repuesto" selected>Repuesto</option>
+          <option value="Mano de obra">Mano de obra</option>
+          <option value="Material">Material</option>
+        </select>
+      </div>
+      <div class="col-12 <%= esAdmin ? 'col-md-4' : 'col-md-6' %>">
+        <label class="form-label" for="item-desc">Descripcion</label>
+        <input type="text" id="item-desc" name="descripcion" class="form-control" placeholder="Que se ocupa..." required>
+      </div>
+      <div class="col-6 col-sm-3 col-md-2">
+        <label class="form-label" for="item-cant">Cantidad</label>
+        <input type="number" id="item-cant" name="cantidad" class="form-control" value="1" min="0" step="any">
+      </div>
+      <% if (esAdmin) { %>
+      <div class="col-6 col-sm-3 col-md-2">
+        <label class="form-label" for="item-precio">Precio Unit.</label>
+        <input type="number" id="item-precio" name="precio_unitario" class="form-control" value="0" min="0" step="any">
+      </div>
+      <% } %>
+      <div class="col-12 col-sm-6 col-md-1 d-grid">
+        <button type="submit" class="btn btn-success"><i class="bi bi-plus-lg"></i> Agregar</button>
+      </div>
+    </form>
+    <% } %>
+
+    <% if (items.length) { %>
     <div class="table-responsive">
-      <table class="table mb-0">
+      <table class="table mb-0 align-middle">
         <thead class="table-light">
           <tr>
             <th>#</th>
             <th>Tipo</th>
             <th>Descripcion</th>
             <th class="text-center">Cantidad</th>
+            <% if (esAdmin) { %>
             <th class="text-end">Precio Unit.</th>
             <th class="text-end">Subtotal</th>
+            <% } %>
+            <% if (esAdmin || esMecanico) { %>
+            <th class="text-end">Accion</th>
+            <% } %>
           </tr>
         </thead>
         <tbody>
           <% items.forEach((it, i) => { %>
           <tr>
             <td><%= i + 1 %></td>
-            <td><span class="badge bg-<%= it.tipo === 'Servicio' ? 'info' : 'warning' %>"><%= it.tipo %></span></td>
+            <td><span class="badge bg-<%= it.tipo === 'Servicio' || it.tipo === 'Mano de obra' ? 'info' : 'warning' %>"><%= it.tipo %></span></td>
             <td><%= it.descripcion %></td>
             <td class="text-center"><%= it.cantidad %></td>
+            <% if (esAdmin) { %>
             <td class="text-end">$<%= it.precio_unitario.toFixed(2) %></td>
             <td class="text-end">$<%= (it.cantidad * it.precio_unitario).toFixed(2) %></td>
+            <% } %>
+            <% if (esAdmin || esMecanico) { %>
+            <td class="text-end">
+              <form method="POST" action="/servicios/<%= servicio.id %>/items/<%= it.id %>/eliminar" class="d-inline"
+                    onsubmit="return confirm('Eliminar este item?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+            <% } %>
           </tr>
           <% }) %>
         </tbody>
+        <% if (esAdmin) { %>
         <tfoot>
           <tr>
             <td colspan="5" class="text-end"><strong>Total repuestos:</strong></td>
             <td class="text-end fw-bold">$<%= totalItems.toFixed(2) %></td>
+            <td></td>
           </tr>
           <tr>
             <td colspan="5" class="text-end"><strong>Mano de obra:</strong></td>
             <td class="text-end fw-bold">$<%= (servicio.costo || 0).toFixed(2) %></td>
+            <td></td>
           </tr>
           <tr class="table-dark">
             <td colspan="5" class="text-end"><strong>TOTAL SERVICIO:</strong></td>
             <td class="text-end fw-bold fs-5">$<%= (totalItems + (servicio.costo || 0)).toFixed(2) %></td>
+            <td></td>
           </tr>
         </tfoot>
+        <% } %>
       </table>
     </div>
+    <% } else { %>
+    <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> Sin repuestos ni materiales registrados aun.</p>
+    <% } %>
   </div>
 </div>
-<% } %>
 
 <!-- Comentarios -->
 <div class="card mt-4">
@@ -237,5 +296,96 @@
     <% } %>
   </div>
 </div>
+
+<!-- Fotos -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-images"></i> Fotos</h5>
+  </div>
+  <div class="card-body">
+    <% if (esAdmin || esMecanico) { %>
+    <form method="POST" action="/fotos/subir" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+      <input type="hidden" name="servicio_id" value="<%= servicio.id %>">
+      <div class="col-12 col-md-5">
+        <label class="form-label" for="fotos-srv">Seleccionar fotos</label>
+        <input type="file" id="fotos-srv" name="fotos" multiple accept="image/*" class="form-control" required>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label" for="desc-srv">Descripcion</label>
+        <input type="text" id="desc-srv" name="descripcion" class="form-control" placeholder="Descripcion (opcional)">
+      </div>
+      <div class="col-12 col-md-3 d-grid">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Subir fotos</button>
+      </div>
+      <div class="col-12">
+        <small class="text-muted">JPG, PNG o WEBP, hasta 5MB cada una.</small>
+      </div>
+    </form>
+    <% } %>
+
+    <% if (fotos && fotos.length) { %>
+    <div class="row g-2">
+      <% fotos.forEach(function(f) { %>
+      <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="position-relative">
+          <img src="/fotos/<%= f.id %>/ver"
+               class="img-fluid rounded foto-thumb border"
+               style="aspect-ratio:1/1; object-fit:cover; width:100%; cursor:pointer"
+               loading="lazy"
+               alt="<%= f.descripcion || f.nombre_original || 'Foto' %>"
+               data-src="/fotos/<%= f.id %>/ver"
+               data-desc="<%= f.descripcion || f.nombre_original || '' %>">
+          <% if (f.descripcion) { %>
+          <div class="small text-muted text-truncate mt-1" title="<%= f.descripcion %>"><%= f.descripcion %></div>
+          <% } %>
+          <% if (esAdmin || esMecanico) { %>
+          <form method="POST" action="/fotos/<%= f.id %>/eliminar" class="mt-1"
+                onsubmit="return confirm('Eliminar esta foto?')">
+            <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash"></i> Eliminar</button>
+          </form>
+          <% } %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+      <p class="text-muted mb-0">Sin fotos. Agrega la primera.</p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal lightbox de fotos -->
+<div class="modal fade" id="fotoModal" tabindex="-1" aria-hidden="true" aria-labelledby="fotoModalLabel">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="fotoModalLabel">Foto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="fotoModalImg" src="" class="img-fluid rounded" alt="Foto ampliada">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modalEl = document.getElementById('fotoModal');
+  if (!modalEl || typeof bootstrap === 'undefined') return;
+  var modal = new bootstrap.Modal(modalEl);
+  var modalImg = document.getElementById('fotoModalImg');
+  var modalLabel = document.getElementById('fotoModalLabel');
+  document.querySelectorAll('.foto-thumb').forEach(function (img) {
+    img.addEventListener('click', function () {
+      modalImg.src = img.getAttribute('data-src');
+      var desc = img.getAttribute('data-desc') || 'Foto';
+      modalImg.alt = desc;
+      modalLabel.textContent = desc;
+      modal.show();
+    });
+  });
+})();
+</script>
 
 <%- include('../partials/footer') %>
