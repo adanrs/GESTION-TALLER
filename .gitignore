@@ -3,6 +3,9 @@ data/
 *.db
 .env
 .env.local
+boot.err
+boot.log
+_*.js
 task-configs.storage/
 *.png
 *.jpeg
