@@ -1,9 +1,45 @@
 :root {
-  /* Paleta base (se mantiene azul/oscuro de Bootstrap) */
-  --gt-primary: #0d6efd;
-  --gt-primary-rgb: 13, 110, 253;
-  --gt-success: #198754;
-  --gt-success-rgb: 25, 135, 84;
+  /* ==========================================================================
+     Paleta profesional "Taller" — azul acero/petroleo + acento ambar.
+     Serio, tecnico y confiable. Ajusta aqui para retematizar toda la app.
+     ========================================================================== */
+
+  /* Primario: azul acero profundo (industrial, confiable) */
+  --gt-primary: #1f5f8b;
+  --gt-primary-rgb: 31, 95, 139;
+  --gt-primary-hover: #184c70;
+  --gt-primary-active: #143f5d;
+  --gt-on-primary: #ffffff;
+
+  /* Acento: ambar/seguridad de taller. Uso discreto (detalles, foco opcional) */
+  --gt-accent: #e0852f;
+  --gt-accent-rgb: 224, 133, 47;
+  --gt-on-accent: #1f2733;
+
+  /* Superficies y texto (frio, alto contraste) */
+  --gt-bg: #eef2f7;
+  --gt-bg-grad-top: #f4f7fb;
+  --gt-bg-grad-bottom: #e6ecf4;
+  --gt-surface: #ffffff;
+  --gt-surface-2: #f1f5fa;
+  --gt-text: #1c2733;
+  --gt-text-muted: #5b6b7c;
+  --gt-border: rgba(28, 58, 90, .12);
+  --gt-border-strong: rgba(28, 58, 90, .18);
+
+  /* Navbar oscura tematizada (azul petroleo en vez de gris neutro) */
+  --gt-nav-top: #1c3a52;
+  --gt-nav-bottom: #142b3e;
+
+  /* Estados semanticos (armonizados pero distinguibles entre si) */
+  --gt-success: #18794e;
+  --gt-success-rgb: 24, 121, 78;
+  --gt-danger: #c0392b;
+  --gt-danger-rgb: 192, 57, 43;
+  --gt-warning: #d98318;
+  --gt-warning-rgb: 217, 131, 24;
+  --gt-info: #1f7a99;
+  --gt-info-rgb: 31, 122, 153;
 
   /* Sistema de sombras multinivel para dar profundidad */
   --gt-shadow-xs: 0 1px 2px rgba(16, 24, 40, .06);
@@ -19,10 +55,10 @@
 
 body {
   /* Gradiente muy sutil para dar profundidad al conjunto de cards (no blanco puro) */
-  background-color: #f4f6fb;
-  background-image: linear-gradient(180deg, #f7f9fc 0%, #eef1f7 100%);
+  background-color: var(--gt-bg);
+  background-image: linear-gradient(180deg, var(--gt-bg-grad-top) 0%, var(--gt-bg-grad-bottom) 100%);
   background-attachment: fixed;
-  color: #1f2733;
+  color: var(--gt-text);
   font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -30,14 +66,24 @@ body {
   font-weight: 600;
 }
 
-/* Navbar: gradiente oscuro muy sutil + sombra inferior para separarla del contenido */
-.navbar.bg-dark {
-  background-image: linear-gradient(180deg, #23252b 0%, #1a1c20 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+/* Navbar: gradiente azul petroleo tematizado + sombra inferior para separarla del contenido.
+   Cubre tanto la clase utilitaria bg-dark como bg-primary por si se usa cualquiera. */
+.navbar.bg-dark,
+.navbar.bg-primary {
+  background-color: var(--gt-nav-bottom) !important;
+  background-image: linear-gradient(180deg, var(--gt-nav-top) 0%, var(--gt-nav-bottom) 100%) !important;
+  box-shadow: 0 2px 8px rgba(20, 43, 62, .28);
 }
 
 .navbar .nav-link {
   transition: color var(--gt-transition), opacity var(--gt-transition);
+}
+
+/* Detalle activo de navegacion con el acento ambar (refuerza ubicacion actual) */
+.navbar-dark .navbar-nav .nav-link.active,
+.navbar-dark .navbar-nav .show > .nav-link {
+  color: #fff;
+  box-shadow: inset 0 -2px 0 var(--gt-accent);
 }
 
 /* Cards: sombra suave multinivel, borde sutil, radio mayor y elevación en hover */
@@ -61,8 +107,24 @@ a > .card:hover,
 }
 
 .card-header {
-  background-color: rgba(16, 24, 40, .015);
-  border-bottom: 1px solid rgba(16, 24, 40, .06);
+  background-color: var(--gt-surface-2);
+  border-bottom: 1px solid var(--gt-border);
+}
+
+/* Links: usan el primario tematizado en vez del azul Bootstrap por defecto */
+a {
+  color: var(--gt-primary);
+  text-decoration-color: rgba(var(--gt-primary-rgb), .4);
+}
+
+a:hover {
+  color: var(--gt-primary-hover);
+}
+
+/* Links dentro de la navbar oscura conservan su color claro (no aplicar primario) */
+.navbar a,
+.navbar a:hover {
+  color: inherit;
 }
 
 /* Botones: transición suave + leve realce en hover */
@@ -81,18 +143,34 @@ a > .card:hover,
 }
 
 .btn-primary {
-  background-image: linear-gradient(180deg, #2b7bff 0%, #0d6efd 100%);
-  border-color: #0d6efd;
+  --bs-btn-bg: var(--gt-primary);
+  --bs-btn-border-color: var(--gt-primary);
+  --bs-btn-hover-bg: var(--gt-primary-hover);
+  --bs-btn-hover-border-color: var(--gt-primary-hover);
+  --bs-btn-active-bg: var(--gt-primary-active);
+  --bs-btn-active-border-color: var(--gt-primary-active);
+  --bs-btn-disabled-bg: var(--gt-primary);
+  --bs-btn-disabled-border-color: var(--gt-primary);
+  background-image: linear-gradient(180deg, #2a76a6 0%, var(--gt-primary) 100%);
+  border-color: var(--gt-primary);
+  color: var(--gt-on-primary);
   box-shadow: 0 1px 2px rgba(var(--gt-primary-rgb), .35);
 }
 
 .btn-primary:hover {
+  background-image: linear-gradient(180deg, var(--gt-primary) 0%, var(--gt-primary-hover) 100%);
   box-shadow: 0 4px 12px rgba(var(--gt-primary-rgb), .35);
 }
 
 .btn-success {
-  background-image: linear-gradient(180deg, #20a063 0%, #198754 100%);
-  border-color: #198754;
+  --bs-btn-bg: var(--gt-success);
+  --bs-btn-border-color: var(--gt-success);
+  --bs-btn-hover-bg: #146642;
+  --bs-btn-hover-border-color: #146642;
+  --bs-btn-active-bg: #105737;
+  --bs-btn-active-border-color: #105737;
+  background-image: linear-gradient(180deg, #1f9362 0%, var(--gt-success) 100%);
+  border-color: var(--gt-success);
   box-shadow: 0 1px 2px rgba(var(--gt-success-rgb), .35);
 }
 
@@ -108,6 +186,83 @@ a > .card:hover,
   box-shadow: var(--gt-shadow-sm);
 }
 
+/* Outline-primary tematizado (evita el azul Bootstrap por defecto) */
+.btn-outline-primary {
+  --bs-btn-color: var(--gt-primary);
+  --bs-btn-border-color: var(--gt-primary);
+  --bs-btn-hover-bg: var(--gt-primary);
+  --bs-btn-hover-border-color: var(--gt-primary);
+  --bs-btn-active-bg: var(--gt-primary-active);
+  --bs-btn-active-border-color: var(--gt-primary-active);
+}
+
+/* Boton de acento (opcional): para una CTA puntual que deba destacar sobre el primario */
+.btn-accent {
+  --bs-btn-color: var(--gt-on-accent);
+  --bs-btn-bg: var(--gt-accent);
+  --bs-btn-border-color: var(--gt-accent);
+  --bs-btn-hover-color: var(--gt-on-accent);
+  --bs-btn-hover-bg: #cf7724;
+  --bs-btn-hover-border-color: #cf7724;
+  --bs-btn-active-bg: #b86a1f;
+  --bs-btn-active-border-color: #b86a1f;
+  color: var(--gt-on-accent);
+  background-color: var(--gt-accent);
+  border: 1px solid var(--gt-accent);
+}
+
+.btn-accent:hover {
+  color: var(--gt-on-accent);
+  background-color: #cf7724;
+  border-color: #cf7724;
+  box-shadow: 0 4px 12px rgba(var(--gt-accent-rgb), .35);
+}
+
+/* ==========================================================================
+   Utilidades de color tematizadas: sobrescriben el azul Bootstrap por defecto
+   para que .text-primary / .bg-primary / .border-primary usen el primario nuevo.
+   ========================================================================== */
+.text-primary { color: var(--gt-primary) !important; }
+.link-primary { color: var(--gt-primary) !important; }
+.link-primary:hover, .link-primary:focus { color: var(--gt-primary-hover) !important; }
+.bg-primary { background-color: var(--gt-primary) !important; }
+.border-primary { border-color: var(--gt-primary) !important; }
+
+/* Estados semanticos armonizados a la paleta (siguen siendo distinguibles).
+   .text-bg-* es el patron de Bootstrap 5.3 usado por muchos badges de estado. */
+.text-success { color: var(--gt-success) !important; }
+.text-danger  { color: var(--gt-danger) !important; }
+.text-warning { color: var(--gt-warning) !important; }
+.text-info    { color: var(--gt-info) !important; }
+
+.bg-success, .text-bg-success { background-color: var(--gt-success) !important; color: #fff !important; }
+.bg-danger,  .text-bg-danger  { background-color: var(--gt-danger) !important;  color: #fff !important; }
+.bg-info,    .text-bg-info    { background-color: var(--gt-info) !important;    color: #fff !important; }
+/* Warning conserva texto oscuro para mantener contraste AA sobre ambar claro */
+.bg-warning, .text-bg-warning { background-color: var(--gt-warning) !important; color: #1f2733 !important; }
+.text-bg-primary { background-color: var(--gt-primary) !important; color: #fff !important; }
+
+.alert-primary {
+  --bs-alert-color: var(--gt-primary-active);
+  --bs-alert-bg: rgba(var(--gt-primary-rgb), .10);
+  --bs-alert-border-color: rgba(var(--gt-primary-rgb), .22);
+}
+
+/* Spinner y barras de progreso que heredan text-primary */
+.spinner-border.text-primary,
+.spinner-grow.text-primary { color: var(--gt-primary) !important; }
+.progress-bar { background-color: var(--gt-primary); }
+
+/* Form switches / checks marcados con el primario tematizado */
+.form-check-input:checked {
+  background-color: var(--gt-primary);
+  border-color: var(--gt-primary);
+}
+.form-check-input:focus {
+  border-color: rgba(var(--gt-primary-rgb), .6);
+  box-shadow: 0 0 0 .2rem rgba(var(--gt-primary-rgb), .18);
+}
+
 /* Tablas: encabezado con fondo y elevación ligera, filas hover refinadas */
 .table th {
   font-size: 0.85rem;
@@ -116,9 +271,9 @@ a > .card:hover,
 }
 
 .table > thead th {
-  background-color: #eef1f7;
-  color: #3a4252;
-  border-bottom: 2px solid rgba(16, 24, 40, .08);
+  background-color: var(--gt-surface-2);
+  color: #34465a;
+  border-bottom: 2px solid var(--gt-border-strong);
 }
 
 .table-hover > tbody > tr {
@@ -227,7 +382,7 @@ a > .card:hover,
   font-size: 1.9rem;
   font-weight: 700;
   line-height: 1.1;
-  color: #1f2733;
+  color: var(--gt-text);
   letter-spacing: -.5px;
 }
 
@@ -236,14 +391,14 @@ a > .card:hover,
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .4px;
-  color: #6b7280;
+  color: var(--gt-text-muted);
 }
 
 /* Variantes de color del icono (semanticas) */
-.stat-card--primary .stat-card__icon { background-image: linear-gradient(160deg, #3b82f6, #0d6efd); }
-.stat-card--success .stat-card__icon { background-image: linear-gradient(160deg, #22c07a, #198754); }
-.stat-card--warning .stat-card__icon { background-image: linear-gradient(160deg, #f0a020, #e08e0b); }
-.stat-card--info    .stat-card__icon { background-image: linear-gradient(160deg, #2bb7d6, #0aa2c0); }
+.stat-card--primary .stat-card__icon { background-image: linear-gradient(160deg, #2f78a8, var(--gt-primary)); }
+.stat-card--success .stat-card__icon { background-image: linear-gradient(160deg, #25a06c, var(--gt-success)); }
+.stat-card--warning .stat-card__icon { background-image: linear-gradient(160deg, #eda236, var(--gt-warning)); }
+.stat-card--info    .stat-card__icon { background-image: linear-gradient(160deg, #2a9cbf, var(--gt-info)); }
 
 /* Barra de color sutil a la izquierda para reforzar la categoria */
 .stat-card::before {
@@ -252,10 +407,10 @@ a > .card:hover,
   left: 0; top: 0; bottom: 0;
   width: 4px;
 }
-.stat-card--primary::before { background: #0d6efd; }
-.stat-card--success::before { background: #198754; }
-.stat-card--warning::before { background: #e08e0b; }
-.stat-card--info::before    { background: #0aa2c0; }
+.stat-card--primary::before { background: var(--gt-primary); }
+.stat-card--success::before { background: var(--gt-success); }
+.stat-card--warning::before { background: var(--gt-warning); }
+.stat-card--info::before    { background: var(--gt-info); }
 
 @media (max-width: 575.98px) {
   .stat-card__value { font-size: 1.6rem; }
@@ -284,5 +439,20 @@ a > .card:hover,
   }
   body {
     background: #fff !important;
+    color: #000 !important;
+  }
+  /* Asegura que fondos de color (navbar/badges) se impriman en navegadores
+     que respetan print-color-adjust; sin esto algunos los omiten. */
+  .badge,
+  .text-bg-success, .text-bg-danger, .text-bg-warning,
+  .text-bg-info, .text-bg-primary,
+  .stat-card__icon {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Encabezados de tabla legibles en blanco y negro */
+  .table > thead th {
+    background-color: #f1f1f1 !important;
+    color: #000 !important;
   }
 }

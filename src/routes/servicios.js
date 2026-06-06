@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const PDFDocument = require('pdfkit');
 const db = require('../db/database');
 const estados = require('../lib/estados');
 const audit   = require('../lib/auditoria');
@@ -317,6 +318,305 @@ router.get('/:id', (req, res) => {
     comentarios,
     fotos
   });
+});
+
+// ---------------------------------------------------------------------------
+// PDF GET /:id/pdf  (admin siempre; tecnico solo si es su orden)
+// ---------------------------------------------------------------------------
+router.get('/:id/pdf', (req, res) => {
+  const usuario = req.session.usuario;
+
+  // Cargar orden con vehiculo y cliente completos
+  const servicio = db.prepare(`
+    SELECT s.*,
+           v.placa, v.marca, v.modelo, v.ano, v.color, v.vin,
+           c.nombre  AS cliente_nombre, c.cedula, c.telefono AS cliente_telefono, c.email AS cliente_email,
+           u.nombre  AS mecanico_nombre
+    FROM servicios s
+    JOIN vehiculos  v ON s.vehiculo_id = v.id
+    JOIN clientes   c ON v.cliente_id  = c.id
+    LEFT JOIN usuarios u ON s.mecanico_id = u.id
+    WHERE s.id = ?
+  `).get(req.params.id);
+
+  if (!servicio) {
+    return res.status(404).render('partials/error', { title: 'Error', message: 'Servicio no encontrado' });
+  }
+
+  if (!puedeOperarOrden(servicio, usuario)) {
+    return res.status(403).render('partials/error', {
+      title: 'Acceso denegado',
+      message: 'No tienes permiso para imprimir esta orden.'
+    });
+  }
+
+  const items  = db.prepare('SELECT * FROM servicio_items  WHERE servicio_id = ? ORDER BY id').all(servicio.id);
+  const tareas = db.prepare('SELECT * FROM servicio_tareas WHERE servicio_id = ? ORDER BY orden, id').all(servicio.id);
+
+  // Config del taller
+  const cfgRows = db.prepare('SELECT clave, valor FROM configuracion').all();
+  const cfg = {};
+  cfgRows.forEach(r => (cfg[r.clave] = r.valor));
+
+  const esAdmin = usuario?.rol === 'admin';
+  const folio   = servicio.numero || ('#' + servicio.id);
+
+  // ── Construccion del PDF ──────────────────────────────────────────────────
+  const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+
+  const L = 50, R = 562, W = R - L;
+
+  // Helper: linea separadora horizontal
+  function hline(y, color, weight) {
+    doc.moveTo(L, y).lineTo(R, y).lineWidth(weight || 1).strokeColor(color || '#cccccc').stroke();
+    doc.lineWidth(1).strokeColor('#000000');
+  }
+
+  // ── ENCABEZADO: taller (izq) + titulo orden (der) ────────────────────────
+  doc.fontSize(17).font('Helvetica-Bold').fillColor('#000000')
+     .text(cfg.nombre_taller || 'Taller Mecanico', L, 50, { width: W / 2 });
+
+  doc.fontSize(9).font('Helvetica').fillColor('#000000');
+  let hy = 72;
+  if (cfg.direccion_taller) { doc.text(cfg.direccion_taller, L, hy); hy += 12; }
+  if (cfg.telefono_taller)  { doc.text('Tel: ' + cfg.telefono_taller, L, hy); hy += 12; }
+  if (cfg.whatsapp_taller) {
+    doc.fillColor('#25D366')
+       .text('WhatsApp: ' + cfg.whatsapp_taller, L, hy, {
+         link: 'https://wa.me/' + cfg.whatsapp_taller, underline: true
+       });
+    doc.fillColor('#000000');
+    hy += 12;
+  }
+  if (cfg.email_taller) {
+    doc.fillColor('#0066cc')
+       .text(cfg.email_taller, L, hy, { link: 'mailto:' + cfg.email_taller, underline: true });
+    doc.fillColor('#000000');
+    hy += 12;
+  }
+
+  // Columna derecha: identificacion de la orden
+  const rx = L + W / 2 + 20;
+  const rw = W / 2 - 20;
+  doc.fontSize(20).font('Helvetica-Bold').fillColor('#000000')
+     .text('ORDEN DE SERVICIO', rx, 50, { width: rw, align: 'right' });
+  doc.fontSize(10).font('Helvetica').fillColor('#000000');
+  doc.text('Folio: ' + folio,                                              rx, 76,  { width: rw, align: 'right' });
+  doc.text('Fecha: ' + (servicio.fecha ? servicio.fecha.substring(0, 10) : ''), rx, 89,  { width: rw, align: 'right' });
+  doc.text('Estado: ' + (servicio.estado || ''),                           rx, 102, { width: rw, align: 'right' });
+  if (servicio.kilometraje) {
+    doc.text('Kilometraje: ' + servicio.kilometraje + ' km',               rx, 115, { width: rw, align: 'right' });
+  }
+
+  // Divisor
+  const divY = Math.max(hy, 128) + 10;
+  hline(divY, '#333333', 2);
+
+  // ── CLIENTE + VEHICULO: 2 columnas ────────────────────────────────────────
+  let infoY = divY + 12;
+
+  doc.fontSize(10).font('Helvetica-Bold').fillColor('#444444').text('CLIENTE', L, infoY);
+  doc.fillColor('#000000');
+  infoY += 14;
+  doc.fontSize(9).font('Helvetica');
+  doc.text(servicio.cliente_nombre || '', L, infoY); infoY += 12;
+  if (servicio.cedula)           { doc.text('Cedula: ' + servicio.cedula,                   L, infoY); infoY += 12; }
+  if (servicio.cliente_telefono) { doc.text('Tel: '   + servicio.cliente_telefono,           L, infoY); infoY += 12; }
+  if (servicio.cliente_email)    { doc.text('Email: ' + servicio.cliente_email,              L, infoY); infoY += 12; }
+
+  let vy = divY + 12;
+  doc.fontSize(10).font('Helvetica-Bold').fillColor('#444444').text('VEHICULO', rx, vy, { width: rw });
+  doc.fillColor('#000000');
+  vy += 14;
+  doc.fontSize(9).font('Helvetica');
+  doc.text('Placa: ' + (servicio.placa || ''), rx, vy, { width: rw }); vy += 12;
+  doc.text((servicio.marca || '') + ' ' + (servicio.modelo || '') + (servicio.ano ? ' (' + servicio.ano + ')' : ''), rx, vy, { width: rw }); vy += 12;
+  if (servicio.color) { doc.text('Color: ' + servicio.color, rx, vy, { width: rw }); vy += 12; }
+  if (servicio.vin)   { doc.text('VIN: '   + servicio.vin,   rx, vy, { width: rw }); vy += 12; }
+
+  // Fila de mecanico y descripcion debajo de las columnas
+  let bodyY = Math.max(infoY, vy) + 10;
+  hline(bodyY, '#cccccc');
+  bodyY += 8;
+
+  const mecNombre = servicio.mecanico_nombre || servicio.tecnico || 'Sin asignar';
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#444444').text('Mecanico asignado: ', L, bodyY, { continued: true });
+  doc.font('Helvetica').fillColor('#000000').text(mecNombre);
+  bodyY += 14;
+
+  doc.fontSize(9).font('Helvetica-Bold').fillColor('#444444').text('Descripcion del trabajo: ', L, bodyY, { continued: true });
+  doc.font('Helvetica').fillColor('#000000').text(servicio.descripcion || '', { width: W });
+  bodyY = doc.y + 10;
+
+  // ── SECCION: TAREAS ────────────────────────────────────────────────────────
+  hline(bodyY, '#333333', 1.5);
+  bodyY += 8;
+  doc.fontSize(11).font('Helvetica-Bold').fillColor('#222222').text('TAREAS', L, bodyY);
+  bodyY += 16;
+
+  if (tareas.length === 0) {
+    doc.fontSize(9).font('Helvetica').fillColor('#888888').text('Sin tareas registradas.', L, bodyY);
+    bodyY += 14;
+  } else {
+    doc.fontSize(9).font('Helvetica').fillColor('#000000');
+    tareas.forEach(function(t, idx) {
+      if (bodyY > 680) { doc.addPage(); bodyY = 50; }
+      // Checkbox visual: cuadrado relleno si completada
+      if (t.completado) {
+        doc.rect(L, bodyY, 9, 9).fill('#333333');
+        // tilde blanca
+        doc.fillColor('#ffffff').fontSize(7).text('v', L + 1, bodyY + 1);
+        doc.fillColor('#000000').fontSize(9);
+      } else {
+        doc.rect(L, bodyY, 9, 9).stroke('#888888');
+      }
+      // Cebra leve
+      if (idx % 2 === 0) {
+        doc.rect(L + 12, bodyY - 1, W - 12, 13).fill('#f5f5f5');
+        doc.fillColor('#000000');
+      }
+      const estado_tarea = t.completado ? 'Hecha' : 'Pendiente';
+      doc.text(t.descripcion, L + 14, bodyY, { width: W - 14 - (t.completado ? 130 : 70) });
+      // estado a la derecha
+      doc.fillColor(t.completado ? '#2d6a4f' : '#888888')
+         .text(estado_tarea, R - 120, bodyY, { width: 120, align: 'right' });
+      doc.fillColor('#000000');
+      bodyY += 14;
+      // quien/cuando si completada
+      if (t.completado && (t.tecnico || t.fecha_completado)) {
+        doc.fontSize(8).fillColor('#555555')
+           .text(
+             'por ' + (t.tecnico || 'N/A') + (t.fecha_completado ? ' — ' + t.fecha_completado : ''),
+             L + 14, bodyY, { width: W - 14 }
+           );
+        doc.fontSize(9).fillColor('#000000');
+        bodyY += 12;
+      }
+    });
+  }
+  bodyY += 6;
+
+  // ── SECCION: REPUESTOS / MATERIALES ────────────────────────────────────────
+  hline(bodyY, '#333333', 1.5);
+  bodyY += 8;
+  doc.fontSize(11).font('Helvetica-Bold').fillColor('#222222').text('REPUESTOS / MATERIALES', L, bodyY);
+  bodyY += 16;
+
+  if (items.length === 0) {
+    doc.fontSize(9).font('Helvetica').fillColor('#888888').text('Sin repuestos ni materiales registrados.', L, bodyY);
+    bodyY += 14;
+  } else {
+    // Encabezado de tabla
+    const col = esAdmin
+      ? { tipo: L, desc: L + 70, cant: 360, pUnit: 415, sub: 490 }
+      : { tipo: L, desc: L + 70, cant: R - 60 };
+
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#555555');
+    doc.text('#',    L - 5,      bodyY, { width: 20,  align: 'right' });
+    doc.text('TIPO', col.tipo,   bodyY, { width: 65 });
+    doc.text('DESCRIPCION', col.desc, bodyY, { width: esAdmin ? 280 : W - 80 });
+    doc.text('CANT', col.cant,   bodyY, { width: 45, align: 'right' });
+    if (esAdmin) {
+      doc.text('P. UNIT.', col.pUnit, bodyY, { width: 65, align: 'right' });
+      doc.text('SUBTOTAL', col.sub,   bodyY, { width: 72, align: 'right' });
+    }
+    doc.fillColor('#000000');
+    bodyY += 14;
+    hline(bodyY, '#cccccc');
+    bodyY += 4;
+
+    doc.font('Helvetica').fontSize(9);
+    items.forEach(function(it, idx) {
+      if (bodyY > 680) { doc.addPage(); bodyY = 50; }
+      if (idx % 2 === 0) {
+        doc.rect(L - 5, bodyY - 2, W + 5, 16).fill('#f8f8f8');
+        doc.fillColor('#000000');
+      }
+      doc.text(String(idx + 1), L - 5,    bodyY, { width: 20,  align: 'right' });
+      doc.text(it.tipo,         col.tipo,  bodyY, { width: 65 });
+      doc.text(it.descripcion,  col.desc,  bodyY, { width: esAdmin ? 280 : W - 80 });
+      doc.text(String(it.cantidad), col.cant, bodyY, { width: 45, align: 'right' });
+      if (esAdmin) {
+        const fmt = function(n) {
+          return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+        doc.text(fmt(it.precio_unitario),           col.pUnit, bodyY, { width: 65, align: 'right' });
+        doc.text(fmt(it.cantidad * it.precio_unitario), col.sub, bodyY, { width: 72, align: 'right' });
+      }
+      bodyY += 16;
+    });
+
+    // Totales: solo admin
+    if (esAdmin) {
+      bodyY += 4;
+      hline(bodyY, '#333333', 1.5);
+      bodyY += 8;
+
+      const fmt = function(n) {
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+      const totalItems = items.reduce(function(s, it) { return s + it.cantidad * it.precio_unitario; }, 0);
+      const costoMO    = parseFloat(servicio.costo) || 0;
+      const totalFinal = totalItems + costoMO;
+
+      const totX  = 350;
+      const totVX = col.sub;
+
+      doc.fontSize(9).font('Helvetica').fillColor('#000000');
+      doc.text('Total repuestos:',  totX, bodyY, { width: 130, align: 'right' });
+      doc.text(fmt(totalItems),     totVX, bodyY, { width: 72, align: 'right' });
+      bodyY += 14;
+
+      doc.text('Mano de obra:',     totX, bodyY, { width: 130, align: 'right' });
+      doc.text(fmt(costoMO),        totVX, bodyY, { width: 72, align: 'right' });
+      bodyY += 14;
+
+      doc.rect(totX - 5, bodyY - 2, R - totX + 5, 22).fill('#1a1a2e');
+      doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold');
+      doc.text('TOTAL:', totX, bodyY + 2, { width: 130, align: 'right' });
+      doc.text(fmt(totalFinal), totVX, bodyY + 2, { width: 72, align: 'right' });
+      doc.fillColor('#000000');
+      bodyY += 28;
+    }
+  }
+
+  // ── NOTAS ──────────────────────────────────────────────────────────────────
+  if (servicio.notas) {
+    bodyY += 4;
+    hline(bodyY, '#cccccc');
+    bodyY += 8;
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#444444').text('Notas:', L, bodyY);
+    bodyY += 12;
+    doc.font('Helvetica').fillColor('#000000').text(servicio.notas, L, bodyY, { width: W });
+    bodyY = doc.y + 10;
+  }
+
+  // ── FOOTER ─────────────────────────────────────────────────────────────────
+  const footerY = Math.max(bodyY + 20, 680);
+  if (footerY > 720) { doc.addPage(); }
+  const fy = footerY > 720 ? 50 : footerY;
+  hline(fy, '#cccccc');
+  doc.fontSize(8).font('Helvetica').fillColor('#666666');
+  let fLine = fy + 8;
+  if (cfg.telefono_taller) {
+    doc.text('Tel: ' + cfg.telefono_taller, L, fLine, { width: W / 2 });
+  }
+  if (cfg.whatsapp_taller) {
+    doc.fillColor('#25D366')
+       .text('WhatsApp: wa.me/' + cfg.whatsapp_taller, L + W / 2, fLine, {
+         link: 'https://wa.me/' + cfg.whatsapp_taller, underline: true, width: W / 2, align: 'right'
+       });
+    doc.fillColor('#666666');
+    fLine += 12;
+  }
+  doc.fontSize(7).fillColor('#999999')
+     .text('Documento generado el ' + new Date().toLocaleString('es-CR'), L, fLine + 2, { width: W, align: 'center' });
+
+  // ── Enviar al cliente ───────────────────────────────────────────────────────
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'inline; filename=orden-' + folio + '.pdf');
+  doc.pipe(res);
+  doc.end();
 });
 
 // ---------------------------------------------------------------------------

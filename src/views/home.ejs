@@ -90,8 +90,11 @@
         </thead>
         <tbody>
           <% serviciosRecientes.forEach(s => { %>
-          <tr>
-            <td class="text-nowrap"><%= s.fecha ? s.fecha.substring(0, 10) : '' %></td>
+          <tr style="cursor:pointer" onclick="window.location='/servicios/<%= s.id %>'">
+            <td class="text-nowrap">
+              <a href="/servicios/<%= s.id %>" class="text-decoration-none"><%= s.fecha ? s.fecha.substring(0, 10) : '' %></a>
+              <% if (s.numero) { %><br><code class="small"><%= s.numero %></code><% } %>
+            </td>
             <td><%= s.placa %> <span class="text-muted"><%= s.marca %> <%= s.modelo %></span></td>
             <td class="d-none d-md-table-cell"><%= s.cliente_nombre %></td>
             <td class="d-none d-lg-table-cell"><%= s.descripcion ? s.descripcion.substring(0, 60) : '' %></td>

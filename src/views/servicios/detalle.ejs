@@ -29,6 +29,7 @@
     <% if (esAdmin) { %>
     <a href="/servicios/<%= servicio.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
     <% } %>
+    <a href="/servicios/<%= servicio.id %>/pdf" target="_blank" class="btn btn-outline-dark"><i class="bi bi-printer"></i> Imprimir / PDF</a>
     <a href="/vehiculos/<%= servicio.vehiculo_id %>" class="btn btn-outline-secondary"><i class="bi bi-car-front"></i> Ver Vehiculo</a>
     <a href="/servicios" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
   </div>
