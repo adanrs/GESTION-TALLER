@@ -121,10 +121,25 @@ a:hover {
   color: var(--gt-primary-hover);
 }
 
-/* Links dentro de la navbar oscura conservan su color claro (no aplicar primario) */
-.navbar a,
-.navbar a:hover {
-  color: inherit;
+/* Navbar oscura: texto claro y legible (NO heredar el color oscuro del body) */
+.navbar-dark .navbar-brand,
+.navbar-dark .navbar-brand:hover {
+  color: #ffffff;
+}
+.navbar-dark .navbar-nav .nav-link {
+  color: rgba(255, 255, 255, .85);
+}
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link:focus {
+  color: #ffffff;
+}
+.navbar-dark .navbar-nav .nav-link.active,
+.navbar-dark .navbar-nav .show > .nav-link {
+  color: #ffffff;
+}
+/* Dropdown del usuario (texto e icono) tambien claro */
+.navbar-dark .navbar-nav .dropdown-toggle {
+  color: rgba(255, 255, 255, .9);
 }
 
 /* Botones: transición suave + leve realce en hover */

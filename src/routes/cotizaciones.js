@@ -3,6 +3,8 @@ const router = express.Router();
 const PDFDocument = require('pdfkit');
 const db = require('../db/database');
 const mailer = require('../lib/mailer');
+const estados = require('../lib/estados');
+const audit   = require('../lib/auditoria');
 
 // ─── Helpers de configuracion ───────────────────────────────────────────────
 
@@ -629,6 +631,142 @@ router.post('/:id/enviar-correo', async (req, res) => {
     res.flash('danger', 'No se pudo enviar el correo: ' + err.message);
   }
   return res.redirect(`/cotizaciones/${id}`);
+});
+
+// ─── Cambio rapido de estado ──────────────────────────────────────────────────
+// POST /:id/estado  body: { estado }
+// Usado por los botones Enviar / Aprobar / Rechazar de la vista.
+
+router.post('/:id/estado', (req, res) => {
+  const id     = req.params.id;
+  const estado = (req.body.estado || '').trim();
+
+  if (!estados.ESTADOS_COTIZACION.includes(estado)) {
+    res.flash('danger', `Estado invalido: ${estado}`);
+    return res.redirect(`/cotizaciones/${id}`);
+  }
+
+  const fila = db.prepare('SELECT estado FROM cotizaciones WHERE id = ?').get(id);
+  if (!fila) {
+    res.flash('danger', 'Cotizacion no encontrada');
+    return res.redirect('/cotizaciones');
+  }
+
+  const estadoAnterior = fila.estado || 'Borrador';
+  db.prepare('UPDATE cotizaciones SET estado = ? WHERE id = ?').run(estado, id);
+
+  audit.registrar({
+    usuario:        req.session.usuario,
+    accion:         'cambio_estado',
+    entidad:        'cotizacion',
+    entidad_id:     id,
+    estado_anterior: estadoAnterior,
+    estado_nuevo:   estado,
+  });
+
+  res.flash('success', `Cotizacion marcada como ${estado}`);
+  return res.redirect(`/cotizaciones/${id}`);
+});
+
+// ─── Marcar pagada ────────────────────────────────────────────────────────────
+// POST /:id/marcar-pagada
+
+router.post('/:id/marcar-pagada', (req, res) => {
+  const id       = req.params.id;
+  const fila     = db.prepare('SELECT estado FROM cotizaciones WHERE id = ?').get(id);
+
+  if (!fila) {
+    res.flash('danger', 'Cotizacion no encontrada');
+    return res.redirect('/cotizaciones');
+  }
+
+  const estadoAnterior = fila.estado || 'Borrador';
+  const fechaPago      = new Date().toLocaleString('es-CR');
+
+  db.prepare('UPDATE cotizaciones SET estado = ?, fecha_pago = ? WHERE id = ?')
+    .run('Pagada', fechaPago, id);
+
+  audit.registrar({
+    usuario:         req.session.usuario,
+    accion:          'pago',
+    entidad:         'cotizacion',
+    entidad_id:      id,
+    estado_anterior: estadoAnterior,
+    estado_nuevo:    'Pagada',
+    detalle:         `Fecha de pago: ${fechaPago}`,
+  });
+
+  res.flash('success', 'Cotizacion marcada como pagada');
+  return res.redirect(`/cotizaciones/${id}`);
+});
+
+// ─── Convertir a Orden de Servicio ────────────────────────────────────────────
+// POST /:id/convertir
+
+router.post('/:id/convertir', (req, res) => {
+  const cotId = req.params.id;
+
+  const cot = db.prepare(`
+    SELECT cot.*, v.id AS v_id
+    FROM cotizaciones cot
+    JOIN vehiculos v ON cot.vehiculo_id = v.id
+    WHERE cot.id = ?
+  `).get(cotId);
+
+  if (!cot) {
+    return res.status(404).render('partials/error', {
+      title:   'Error',
+      message: 'Cotizacion no encontrada',
+    });
+  }
+
+  const detallesCot = db
+    .prepare('SELECT * FROM cotizacion_detalles WHERE cotizacion_id = ?')
+    .all(cotId);
+
+  // Generar folio OT-YYYYNNNN replicando el patron de servicios.js
+  const year   = new Date().getFullYear();
+  const ultimo = db
+    .prepare('SELECT numero FROM servicios WHERE numero LIKE ? ORDER BY id DESC LIMIT 1')
+    .get(`OT-${year}%`);
+  let seq = 1;
+  if (ultimo) {
+    const parte = ultimo.numero.slice(3); // "YYYYNNNN"
+    seq = parseInt(parte.slice(4), 10) + 1;
+  }
+  const folio = `OT-${year}${String(seq).padStart(4, '0')}`;
+
+  let nuevoServicioId;
+  db.transaction(() => {
+    const r = db.prepare(
+      'INSERT INTO servicios (vehiculo_id, numero, descripcion, estado, costo) VALUES (?, ?, ?, ?, ?)'
+    ).run(
+      cot.vehiculo_id,
+      folio,
+      `Generada desde cotizacion ${cot.numero}`,
+      'Pendiente',
+      0
+    );
+    nuevoServicioId = r.lastInsertRowid;
+
+    const insItem = db.prepare(
+      'INSERT INTO servicio_items (servicio_id, tipo, descripcion, cantidad, precio_unitario) VALUES (?, ?, ?, ?, ?)'
+    );
+    for (const d of detallesCot) {
+      insItem.run(nuevoServicioId, d.tipo, d.descripcion, d.cantidad, d.precio_unitario);
+    }
+  })();
+
+  audit.registrar({
+    usuario:    req.session.usuario,
+    accion:     'convertir',
+    entidad:    'cotizacion',
+    entidad_id: cotId,
+    detalle:    `Orden ${folio} creada`,
+  });
+
+  res.flash('success', `Orden ${folio} creada desde la cotizacion`);
+  return res.redirect(`/servicios/${nuevoServicioId}`);
 });
 
 // ─── Eliminar ─────────────────────────────────────────────────────────────────

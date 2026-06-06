@@ -4,7 +4,7 @@
 const ESTADOS_ORDEN = ['Pendiente', 'Asignada', 'En proceso', 'Completada', 'Por cobrar', 'Cobrada', 'Cancelada'];
 // Estados que cuentan como "orden activa / abierta" (para el dashboard)
 const ESTADOS_ORDEN_ACTIVOS = ['Pendiente', 'Asignada', 'En proceso'];
-const ESTADOS_COTIZACION = ['Borrador', 'Enviada', 'Aprobada', 'Rechazada'];
+const ESTADOS_COTIZACION = ['Borrador', 'Enviada', 'Aprobada', 'Rechazada', 'Pagada'];
 
 // Transiciones permitidas de una orden de servicio
 const TRANSICIONES = {
@@ -31,7 +31,7 @@ function badgeEstado(estado) {
     case 'En proceso': return 'warning text-dark';
     case 'Asignada': case 'Enviada': return 'info';
     case 'Por cobrar': return 'primary';
-    case 'Cobrada': return 'dark';
+    case 'Cobrada': case 'Pagada': return 'dark';
     case 'Cancelada': case 'Rechazada': return 'danger';
     case 'Pendiente': case 'Borrador': return 'secondary';
     default: return 'secondary';

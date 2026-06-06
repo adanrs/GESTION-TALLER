@@ -12,7 +12,7 @@
   <div class="col-auto">
     <select name="estado" class="form-select">
       <option value="">Todos los estados</option>
-      <% ['Borrador','Enviada','Aprobada','Rechazada'].forEach(e => { %>
+      <% ['Borrador','Enviada','Aprobada','Rechazada','Pagada'].forEach(e => { %>
       <option value="<%= e %>" <%= estado === e ? 'selected' : '' %>><%= e %></option>
       <% }) %>
     </select>
@@ -50,7 +50,7 @@
             <td><%= c.cliente_nombre %></td>
             <td class="text-end"><strong><%- simboloMoneda(c.moneda || 'USD') %><%= (c.total || 0).toFixed(2) %></strong></td>
             <td>
-              <span class="badge bg-<%= c.estado === 'Aprobada' ? 'success' : c.estado === 'Rechazada' ? 'danger' : c.estado === 'Enviada' ? 'info' : 'secondary' %>"><%= c.estado %></span>
+              <span class="badge bg-<%= badgeEstado(c.estado) %>"><%= c.estado %></span>
             </td>
             <td class="text-end">
               <a href="/cotizaciones/<%= c.id %>" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>

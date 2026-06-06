@@ -203,6 +203,8 @@ ensureColumn('servicios', 'cobrado', 'INTEGER DEFAULT 0');
 ensureColumn('servicios', 'fecha_cobro', 'TEXT');
 // Garantia que se ofrece al cliente en la cotizacion
 ensureColumn('cotizaciones', 'garantia', 'TEXT');
+// Fecha en que se marco la cotizacion como pagada
+ensureColumn('cotizaciones', 'fecha_pago', 'TEXT');
 // Soft-delete: archivar en vez de borrar (preserva historial)
 ensureColumn('clientes', 'activo', 'INTEGER DEFAULT 1');
 ensureColumn('vehiculos', 'activo', 'INTEGER DEFAULT 1');
