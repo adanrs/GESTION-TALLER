@@ -1,0 +1,197 @@
+<%- include('../partials/header') %>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0">
+    <i class="bi bi-clock-history"></i> Historial
+    <span class="text-muted fs-5 d-block d-sm-inline">
+      <%= vehiculo.placa %> - <%= vehiculo.marca %> <%= vehiculo.modelo %><% if (vehiculo.ano) { %> (<%= vehiculo.ano %>)<% } %>
+    </span>
+  </h2>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/portal/vehiculos/<%= vehiculo.id %>/reporte" class="btn btn-outline-dark" target="_blank">
+      <i class="bi bi-file-earmark-pdf"></i> Reporte PDF
+    </a>
+    <a href="/portal" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-sm-6 col-lg-3">
+    <div class="card stat-card stat-card--primary h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-card__icon"><i class="bi bi-tools"></i></span>
+        <div>
+          <div class="stat-card__value"><%= kpis.total_ordenes || 0 %></div>
+          <div class="stat-card__label">Total de ordenes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-3">
+    <div class="card stat-card stat-card--info h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-card__icon"><i class="bi bi-calendar-check"></i></span>
+        <div>
+          <div class="stat-card__value"><%= kpis.ultima_visita ? kpis.ultima_visita.substring(0, 10) : '-' %></div>
+          <div class="stat-card__label">Ultima visita</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-3">
+    <div class="card stat-card stat-card--success h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-card__icon"><i class="bi bi-speedometer2"></i></span>
+        <div>
+          <div class="stat-card__value"><%= kpis.ultimo_km != null ? kpis.ultimo_km : '-' %></div>
+          <div class="stat-card__label">Ultimo km</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-3">
+    <div class="card stat-card stat-card--warning h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-card__icon"><i class="bi bi-cash-coin"></i></span>
+        <div>
+          <div class="stat-card__value">$<%= (kpis.total_facturado || 0).toFixed(2) %></div>
+          <div class="stat-card__label">Total facturado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="mb-0"><i class="bi bi-list-ul"></i> Eventos</h5></div>
+  <div class="card-body">
+    <% if (eventos && eventos.length) { %>
+    <div class="list-group list-group-flush">
+      <% eventos.forEach(function(ev) { %>
+      <div class="list-group-item px-0">
+        <div class="d-flex gap-3">
+          <div class="flex-shrink-0">
+            <span class="badge rounded-pill <%= ev.tipo === 'orden' ? 'bg-primary' : 'bg-info text-dark' %> fs-6">
+              <i class="bi <%= ev.tipo === 'orden' ? 'bi-tools' : 'bi-receipt' %>"></i>
+            </span>
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <strong><%= ev.tipo === 'orden' ? 'Orden' : 'Cotizacion' %></strong>
+                <% if (ev.datos.numero) { %><code><%= ev.datos.numero %></code><% } %>
+                <% if (ev.datos.estado) { %>
+                <span class="badge bg-<%= badgeEstado(ev.datos.estado) %>"><%= ev.datos.estado %></span>
+                <% } %>
+              </div>
+              <small class="text-muted text-nowrap">
+                <i class="bi bi-calendar3"></i> <%= ev.fecha ? ev.fecha.substring(0, 10) : '-' %>
+              </small>
+            </div>
+            <% if (ev.tipo === 'orden' && ev.datos.descripcion) { %>
+            <div class="text-body mb-1"><%= ev.datos.descripcion %></div>
+            <% } %>
+            <div class="d-flex flex-wrap align-items-center gap-3 small text-muted">
+              <% if (ev.tipo === 'orden') { %>
+                <% if (ev.datos.mecanico_nombre) { %>
+                <span><i class="bi bi-person-gear"></i> <%= ev.datos.mecanico_nombre %></span>
+                <% } %>
+                <% if (ev.datos.kilometraje != null) { %>
+                <span><i class="bi bi-speedometer2"></i> <%= ev.datos.kilometraje %> km</span>
+                <% } %>
+                <% var totalOrden = (ev.datos.costo || 0) + (ev.datos.total_repuestos || 0); %>
+                <span class="fw-semibold text-body"><i class="bi bi-cash"></i> $<%= totalOrden.toFixed(2) %></span>
+              <% } else { %>
+                <% if (ev.datos.total != null) { %>
+                <span class="fw-semibold text-body"><i class="bi bi-cash"></i> $<%= (ev.datos.total || 0).toFixed(2) %></span>
+                <% } %>
+                <a href="/portal/cotizaciones/<%= ev.datos.id %>/pdf" target="_blank" class="btn btn-sm btn-outline-info">
+                  <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+                </a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+      <div class="text-center text-muted p-5">
+        <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+        <p class="mb-0">Este vehiculo aun no tiene ordenes ni cotizaciones registradas.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Galeria de fotos -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="mb-0"><i class="bi bi-images"></i> Fotos</h5></div>
+  <div class="card-body">
+    <% if (fotos && fotos.length) { %>
+    <div class="row g-2">
+      <% fotos.forEach(function(f) { %>
+      <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="position-relative">
+          <img src="/fotos/<%= f.id %>/ver"
+               class="img-fluid rounded foto-thumb border"
+               style="aspect-ratio:1/1; object-fit:cover; width:100%; cursor:pointer"
+               loading="lazy"
+               alt="<%= f.descripcion || f.nombre_original || 'Foto' %>"
+               data-src="/fotos/<%= f.id %>/ver"
+               data-desc="<%= f.descripcion || f.nombre_original || '' %>">
+          <% if (f.descripcion) { %>
+          <div class="small text-muted text-truncate mt-1" title="<%= f.descripcion %>"><%= f.descripcion %></div>
+          <% } %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+      <div class="text-center text-muted p-4">
+        <i class="bi bi-images fs-1 d-block mb-2"></i>
+        <p class="mb-0">Aun no hay fotos para este vehiculo.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Modal lightbox de fotos -->
+<div class="modal fade" id="fotoModal" tabindex="-1" aria-hidden="true" aria-labelledby="fotoModalLabel">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="fotoModalLabel">Foto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="fotoModalImg" src="" class="img-fluid rounded" alt="Foto ampliada">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modalEl = document.getElementById('fotoModal');
+  if (!modalEl || typeof bootstrap === 'undefined') return;
+  var modal = new bootstrap.Modal(modalEl);
+  var modalImg = document.getElementById('fotoModalImg');
+  var modalLabel = document.getElementById('fotoModalLabel');
+  document.querySelectorAll('.foto-thumb').forEach(function (img) {
+    img.addEventListener('click', function () {
+      modalImg.src = img.getAttribute('data-src');
+      var desc = img.getAttribute('data-desc') || 'Foto';
+      modalImg.alt = desc;
+      modalLabel.textContent = desc;
+      modal.show();
+    });
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

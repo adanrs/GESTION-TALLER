@@ -1,0 +1,60 @@
+<%- include('../partials/header') %>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0"><i class="bi bi-inbox"></i> Mis solicitudes</h2>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/portal/solicitudes/crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva solicitud</a>
+    <a href="/portal" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <% if (solicitudes && solicitudes.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th class="d-none d-sm-table-cell">Vehiculo</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% solicitudes.forEach(function(s) { %>
+          <tr>
+            <td class="text-nowrap"><%= s.fecha ? s.fecha.substring(0, 10) : '-' %></td>
+            <td class="d-none d-sm-table-cell">
+              <%= s.placa %>
+              <div class="small text-muted"><%= s.marca %> <%= s.modelo %></div>
+            </td>
+            <td>
+              <div class="d-sm-none small text-muted mb-1"><%= s.placa %> - <%= s.marca %> <%= s.modelo %></div>
+              <span title="<%= s.descripcion %>"><%= s.descripcion.length > 80 ? s.descripcion.substring(0, 80) + '...' : s.descripcion %></span>
+              <% if (s.estado === 'Rechazada' && s.nota_taller) { %>
+              <div class="small text-danger mt-1"><i class="bi bi-exclamation-circle"></i> <%= s.nota_taller %></div>
+              <% } %>
+              <% if (s.estado === 'Convertida') { %>
+              <div class="small text-success mt-1"><i class="bi bi-check-circle"></i> Esta solicitud ya es una orden de servicio.</div>
+              <% } %>
+            </td>
+            <td><span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <div class="text-center text-muted p-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        <p class="mb-0">Aun no has enviado solicitudes.</p>
+        <a href="/portal/solicitudes/crear" class="btn btn-sm btn-primary mt-2">
+          <i class="bi bi-plus-lg"></i> Solicitar servicio
+        </a>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

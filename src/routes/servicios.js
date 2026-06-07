@@ -1071,3 +1071,4 @@ router.post('/:id/eliminar', soloAdmin, (req, res) => {
 });
 
 module.exports = router;
+module.exports.generarNumeroOrden = generarNumeroOrden;

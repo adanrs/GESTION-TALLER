@@ -40,7 +40,63 @@
   </div>
 </div>
 
-<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+<!-- Portal del cliente -->
+<div class="card mb-4">
+  <div class="card-header"><h6 class="mb-0 text-uppercase text-muted"><i class="bi bi-person-badge"></i> Portal del cliente</h6></div>
+  <div class="card-body">
+    <% if (typeof portalCuenta === 'undefined' || !portalCuenta) { %>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+          <p class="mb-1">Este cliente no tiene acceso al portal.</p>
+          <small class="text-muted"><i class="bi bi-info-circle"></i> Requiere que el cliente tenga email registrado.</small>
+        </div>
+        <form method="POST" action="/clientes/<%= cliente.id %>/portal/habilitar">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn-primary" <%= cliente.email ? '' : 'disabled' %>>
+            <i class="bi bi-person-check"></i> Habilitar portal
+          </button>
+        </form>
+      </div>
+    <% } else if (portalCuenta.activo) { %>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+          <p class="mb-1">
+            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Portal habilitado</span>
+          </p>
+          <small class="text-muted">Usuario: <strong><%= portalCuenta.usuario %></strong></small>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <form method="POST" action="/clientes/<%= cliente.id %>/portal/reenviar" class="d-inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-envelope"></i> Reenviar invitacion</button>
+          </form>
+          <form method="POST" action="/clientes/<%= cliente.id %>/portal/deshabilitar" class="d-inline"
+                onsubmit="return confirm('Deshabilitar el acceso al portal de este cliente?')">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-person-x"></i> Deshabilitar</button>
+          </form>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+          <p class="mb-1">
+            <span class="badge bg-secondary"><i class="bi bi-slash-circle"></i> Portal deshabilitado</span>
+          </p>
+          <% if (portalCuenta.usuario) { %>
+          <small class="text-muted">Usuario: <strong><%= portalCuenta.usuario %></strong></small>
+          <% } %>
+        </div>
+        <form method="POST" action="/clientes/<%= cliente.id %>/portal/habilitar">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-person-check"></i> Reactivar</button>
+        </form>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3" id="mis-vehiculos">
   <h4 class="mb-0"><i class="bi bi-car-front"></i> Vehiculos <span class="badge bg-secondary align-middle"><%= vehiculos.length %></span></h4>
   <a href="/vehiculos/crear?cliente_id=<%= cliente.id %>" class="btn btn-sm btn-success"><i class="bi bi-plus-lg"></i> Agregar Vehiculo</a>
 </div>

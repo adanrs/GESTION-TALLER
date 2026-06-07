@@ -102,6 +102,23 @@ app.use((req, res, next) => {
   const rol = req.session.usuario?.rol;
   res.locals.esAdmin = rol === 'admin';
   res.locals.esMecanico = rol === 'tecnico';
+  res.locals.esCliente = rol === 'cliente';
+
+  // El CLIENTE (portal) solo accede a /portal, /auth y /fotos (sus propias fotos, validadas por pertenencia).
+  if (rol === 'cliente') {
+    const permitido = req.path === '/' ||
+                      req.path.startsWith('/portal') ||
+                      req.path.startsWith('/auth') ||
+                      req.path.startsWith('/fotos');
+    if (req.path === '/') return res.redirect('/portal');
+    if (!permitido) {
+      return res.status(403).render('partials/error', {
+        title: 'Acceso restringido',
+        message: 'No tienes acceso a esta seccion.'
+      });
+    }
+    return next();
+  }
 
   // El mecanico (rol tecnico) solo puede ver sus ordenes, su perfil y autenticacion.
   // Excepcion: puede ver el HISTORIAL TECNICO de un vehiculo (sin precios) en /vehiculos/:id/historial.
@@ -135,6 +152,8 @@ app.use('/reportes', require('./routes/reportes'));
 app.use('/fotos', require('./routes/fotos'));
 app.use('/accesos', require('./routes/accesos'));
 app.use('/configuracion', require('./routes/configuracion'));
+app.use('/portal', require('./routes/portal'));
+app.use('/solicitudes', require('./routes/solicitudes'));
 
 // 404 handler
 app.use((req, res) => {

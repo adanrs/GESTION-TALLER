@@ -150,6 +150,22 @@ db.exec(`
     FOREIGN KEY (servicio_id) REFERENCES servicios(id) ON DELETE CASCADE
   );
 
+  -- Solicitudes de servicio creadas por el cliente desde el portal (el admin las aprueba/convierte)
+  CREATE TABLE IF NOT EXISTS solicitudes_servicio (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id INTEGER NOT NULL,
+    vehiculo_id INTEGER NOT NULL,
+    descripcion TEXT NOT NULL,
+    estado TEXT DEFAULT 'Solicitada',
+    servicio_id INTEGER,
+    nota_taller TEXT,
+    fecha TEXT DEFAULT (datetime('now','localtime')),
+    fecha_resuelta TEXT,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
+    FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE,
+    FOREIGN KEY (servicio_id) REFERENCES servicios(id) ON DELETE SET NULL
+  );
+
   -- Log de accesos: quien y cuando inicio sesion (exitoso o fallido)
   CREATE TABLE IF NOT EXISTS accesos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -186,6 +202,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_fotos_vehiculo ON fotos(vehiculo_id);
   CREATE INDEX IF NOT EXISTS idx_fotos_servicio ON fotos(servicio_id);
   CREATE INDEX IF NOT EXISTS idx_auditoria_entidad ON auditoria(entidad, entidad_id);
+  CREATE INDEX IF NOT EXISTS idx_solicitudes_cliente ON solicitudes_servicio(cliente_id);
+  CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON solicitudes_servicio(estado);
 `);
 
 // Migraciones para bases de datos existentes (agregar columnas nuevas si faltan)
@@ -210,6 +228,9 @@ ensureColumn('clientes', 'activo', 'INTEGER DEFAULT 1');
 ensureColumn('vehiculos', 'activo', 'INTEGER DEFAULT 1');
 // Folio legible de la orden de servicio (OT-YYYYNNNN)
 ensureColumn('servicios', 'numero', 'TEXT');
+// Vincula una cuenta de usuario al registro de cliente (portal del cliente)
+ensureColumn('usuarios', 'cliente_id', 'INTEGER');
+db.exec('CREATE INDEX IF NOT EXISTS idx_usuarios_cliente ON usuarios(cliente_id)');
 
 // Create default admin user if no users exist
 const bcrypt = require('bcryptjs');

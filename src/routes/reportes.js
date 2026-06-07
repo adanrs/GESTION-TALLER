@@ -104,9 +104,12 @@ function checkPage(doc, y, threshold) {
   return y;
 }
 
-// ── GET /reportes/vehiculo/:id ──────────────────────────────────────────────
-router.get('/vehiculo/:id', (req, res) => {
-  const id = req.params.id;
+// ── streamReporteVehiculo(res, vehiculoId) ──────────────────────────────────
+// Ejecuta todas las consultas, construye el PDF y lo envia a `res`.
+// Devuelve true si el vehiculo existe y el PDF fue enviado; false si no existe
+// (sin tocar res en ese caso, para que el caller devuelva el 404 adecuado).
+function streamReporteVehiculo(res, vehiculoId) {
+  const id = vehiculoId;
 
   // Vehiculo + cliente
   const vehiculo = db.prepare(`
@@ -117,7 +120,7 @@ router.get('/vehiculo/:id', (req, res) => {
   `).get(id);
 
   if (!vehiculo) {
-    return res.status(404).send('Vehiculo no encontrado');
+    return false;
   }
 
   // Servicios ordenados por fecha desc; mecanico via JOIN, repuestos como suma
@@ -457,6 +460,17 @@ router.get('/vehiculo/:id', (req, res) => {
   drawFooter(doc, cfg, L, R, W, y);
 
   doc.end();
+  return true;
+}
+
+// ── GET /reportes/vehiculo/:id ──────────────────────────────────────────────
+router.get('/vehiculo/:id', (req, res) => {
+  if (!streamReporteVehiculo(res, req.params.id)) {
+    return res.status(404).render('partials/error', {
+      title: 'Error',
+      message: 'Vehiculo no encontrado'
+    });
+  }
 });
 
 // ── GET /reportes/cliente/:id ───────────────────────────────────────────────
@@ -797,3 +811,4 @@ router.get('/cliente/:id', (req, res) => {
 });
 
 module.exports = router;
+module.exports.streamReporteVehiculo = streamReporteVehiculo;

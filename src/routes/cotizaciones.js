@@ -813,3 +813,4 @@ function parseDetalles(body) {
 }
 
 module.exports = router;
+module.exports.construirPDF = construirPDF;

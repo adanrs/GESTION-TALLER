@@ -32,6 +32,34 @@ function puedeAccederFoto(foto, usuario) {
     return !!(servicio && servicio.mecanico_id === usuario.id);
   }
 
+  if (usuario.rol === 'cliente') {
+    // El cliente solo puede ver fotos que pertenezcan a sus propios vehiculos.
+    // Se determina por vehiculo_id (foto de vehiculo) o por servicio_id (foto de orden).
+    // cliente_id NUNCA sale del request; siempre de la sesion.
+    if (!usuario.cliente_id) return false;
+
+    if (foto.vehiculo_id) {
+      const veh = db
+        .prepare('SELECT cliente_id FROM vehiculos WHERE id = ?')
+        .get(foto.vehiculo_id);
+      return !!(veh && veh.cliente_id === usuario.cliente_id);
+    }
+
+    if (foto.servicio_id) {
+      const row = db
+        .prepare(`
+          SELECT v.cliente_id
+          FROM   servicios s
+          JOIN   vehiculos v ON s.vehiculo_id = v.id
+          WHERE  s.id = ?
+        `)
+        .get(foto.servicio_id);
+      return !!(row && row.cliente_id === usuario.cliente_id);
+    }
+
+    return false;
+  }
+
   return false;
 }
 
@@ -65,6 +93,31 @@ function puedeSubir(req) {
 
   return { ok: false, motivo: 'No autorizado' };
 }
+
+// ---------------------------------------------------------------------------
+// Middleware: el cliente (rol 'cliente') no puede subir ni eliminar fotos.
+// Solo puede verlas a traves de GET /:id/ver, validado por puedeAccederFoto.
+// ---------------------------------------------------------------------------
+
+router.post('/subir', (req, res, next) => {
+  if (req.session.usuario?.rol === 'cliente') {
+    return res.status(403).render('partials/error', {
+      title:   'Acceso denegado',
+      message: 'Los clientes no pueden subir fotos.'
+    });
+  }
+  next();
+});
+
+router.post('/:id/eliminar', (req, res, next) => {
+  if (req.session.usuario?.rol === 'cliente') {
+    return res.status(403).render('partials/error', {
+      title:   'Acceso denegado',
+      message: 'Los clientes no pueden eliminar fotos.'
+    });
+  }
+  next();
+});
 
 // ---------------------------------------------------------------------------
 // POST /fotos/subir  — subida multipart

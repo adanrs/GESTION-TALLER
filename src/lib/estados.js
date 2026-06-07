@@ -5,6 +5,8 @@ const ESTADOS_ORDEN = ['Pendiente', 'Asignada', 'En proceso', 'Completada', 'Por
 // Estados que cuentan como "orden activa / abierta" (para el dashboard)
 const ESTADOS_ORDEN_ACTIVOS = ['Pendiente', 'Asignada', 'En proceso'];
 const ESTADOS_COTIZACION = ['Borrador', 'Enviada', 'Aprobada', 'Rechazada', 'Pagada'];
+// Solicitudes de servicio del portal del cliente
+const ESTADOS_SOLICITUD = ['Solicitada', 'Aprobada', 'Rechazada', 'Convertida'];
 
 // Transiciones permitidas de una orden de servicio
 const TRANSICIONES = {
@@ -31,14 +33,15 @@ function badgeEstado(estado) {
     case 'En proceso': return 'warning text-dark';
     case 'Asignada': case 'Enviada': return 'info';
     case 'Por cobrar': return 'primary';
-    case 'Cobrada': case 'Pagada': return 'dark';
+    case 'Cobrada': case 'Pagada': case 'Convertida': return 'dark';
     case 'Cancelada': case 'Rechazada': return 'danger';
+    case 'Solicitada': return 'primary';
     case 'Pendiente': case 'Borrador': return 'secondary';
     default: return 'secondary';
   }
 }
 
 module.exports = {
-  ESTADOS_ORDEN, ESTADOS_ORDEN_ACTIVOS, ESTADOS_COTIZACION,
+  ESTADOS_ORDEN, ESTADOS_ORDEN_ACTIVOS, ESTADOS_COTIZACION, ESTADOS_SOLICITUD,
   TRANSICIONES, puedeTransicionar, badgeEstado,
 };

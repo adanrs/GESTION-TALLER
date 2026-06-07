@@ -18,7 +18,13 @@
       </button>
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto">
-          <% if (typeof esMecanico !== 'undefined' && esMecanico) { %>
+          <% if (typeof esCliente !== 'undefined' && esCliente) { %>
+          <%# El cliente solo ve su portal %>
+          <li class="nav-item"><a class="nav-link <%= currentPath === '/portal' ? 'active' : '' %>" href="/portal"><i class="bi bi-house"></i> Inicio</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath === '/portal' ? 'active' : '' %>" href="/portal#mis-vehiculos"><i class="bi bi-car-front"></i> Mis Vehiculos</a></li>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/portal/solicitudes/crear') ? 'active' : '' %>" href="/portal/solicitudes/crear"><i class="bi bi-plus-circle"></i> Solicitar servicio</a></li>
+          <li class="nav-item"><a class="nav-link <%= (currentPath.startsWith('/portal/solicitudes') && !currentPath.startsWith('/portal/solicitudes/crear')) ? 'active' : '' %>" href="/portal/solicitudes"><i class="bi bi-inbox"></i> Mis Solicitudes</a></li>
+          <% } else if (typeof esMecanico !== 'undefined' && esMecanico) { %>
           <%# El mecanico solo ve sus ordenes asignadas %>
           <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/servicios') ? 'active' : '' %>" href="/servicios"><i class="bi bi-tools"></i> Mis Ordenes</a></li>
           <% } else { %>
@@ -28,6 +34,7 @@
           <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/servicios') ? 'active' : '' %>" href="/servicios"><i class="bi bi-tools"></i> Servicios</a></li>
           <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/cotizaciones') ? 'active' : '' %>" href="/cotizaciones"><i class="bi bi-receipt"></i> Cotizaciones</a></li>
           <% if (typeof esAdmin !== 'undefined' && esAdmin) { %>
+          <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/solicitudes') ? 'active' : '' %>" href="/solicitudes"><i class="bi bi-inbox"></i> Solicitudes</a></li>
           <li class="nav-item"><a class="nav-link <%= currentPath.startsWith('/usuarios') ? 'active' : '' %>" href="/usuarios"><i class="bi bi-people-fill"></i> Usuarios</a></li>
           <% } %>
           <% } %>
@@ -41,6 +48,9 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><span class="dropdown-item-text text-muted small"><%= usuario.rol %></span></li>
               <li><hr class="dropdown-divider"></li>
+              <% if (typeof esCliente !== 'undefined' && esCliente) { %>
+              <li><a class="dropdown-item" href="/auth/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesion</a></li>
+              <% } else { %>
               <li><a class="dropdown-item" href="/perfil"><i class="bi bi-person-gear"></i> Mi Perfil</a></li>
               <% if (typeof esAdmin !== 'undefined' && esAdmin) { %>
               <li><a class="dropdown-item" href="/accesos"><i class="bi bi-shield-lock"></i> Log de Accesos</a></li>
@@ -48,6 +58,7 @@
               <% } %>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="/auth/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesion</a></li>
+              <% } %>
             </ul>
           </li>
         </ul>

@@ -63,7 +63,10 @@ router.post('/login', loginLimiter, (req, res) => {
     console.error('Error al registrar acceso exitoso:', err);
   }
 
-  req.session.usuario = { id: user.id, nombre: user.nombre, usuario: user.usuario, rol: user.rol };
+  req.session.usuario = { id: user.id, nombre: user.nombre, usuario: user.usuario, rol: user.rol, cliente_id: user.cliente_id || null };
+  // Redireccion segun rol
+  if (user.rol === 'cliente') return res.redirect('/portal');
+  if (user.rol === 'tecnico') return res.redirect('/servicios');
   res.redirect('/');
 });
 

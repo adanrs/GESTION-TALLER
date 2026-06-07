@@ -1,0 +1,133 @@
+<%- include('../partials/header') %>
+
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="mb-0">
+    <i class="bi bi-house-door"></i> Hola, <%= cliente.nombre %>
+  </h2>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="/portal/solicitudes/crear" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Solicitar servicio</a>
+    <a href="/portal/solicitudes" class="btn btn-outline-secondary"><i class="bi bi-inbox"></i> Mis solicitudes</a>
+  </div>
+</div>
+
+<!-- Mis vehiculos -->
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h4 class="mb-0"><i class="bi bi-car-front"></i> Mis vehiculos <span class="badge bg-secondary align-middle"><%= vehiculos.length %></span></h4>
+</div>
+
+<% if (vehiculos && vehiculos.length) { %>
+<div class="row g-3 mb-4">
+  <% vehiculos.forEach(function(v) { %>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <a href="/portal/vehiculos/<%= v.id %>" class="text-decoration-none">
+      <div class="card card-hover h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-1"><i class="bi bi-car-front-fill text-primary"></i> <%= v.placa %></h5>
+          <p class="card-text mb-0 text-body"><%= v.marca %> <%= v.modelo %></p>
+          <small class="text-muted"><i class="bi bi-clock-history"></i> Ver historial</small>
+        </div>
+      </div>
+    </a>
+  </div>
+  <% }) %>
+</div>
+<% } else { %>
+<div class="card mb-4">
+  <div class="card-body text-center text-muted p-5">
+    <i class="bi bi-car-front fs-1 d-block mb-2"></i>
+    <p class="mb-0">Aun no tienes vehiculos registrados.</p>
+    <p class="small mb-0">Contacta al taller para registrar tu vehiculo.</p>
+  </div>
+</div>
+<% } %>
+
+<!-- Ordenes recientes -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="mb-0"><i class="bi bi-tools"></i> Ordenes recientes</h5></div>
+  <div class="card-body p-0">
+    <% if (ordenesRecientes && ordenesRecientes.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Vehiculo</th>
+            <th class="d-none d-md-table-cell">Descripcion</th>
+            <th>Estado</th>
+            <th class="text-end">Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% ordenesRecientes.forEach(function(o) { %>
+          <tr>
+            <td class="text-nowrap">
+              <%= o.fecha ? o.fecha.substring(0, 10) : '-' %>
+              <% if (o.numero) { %><div><code><%= o.numero %></code></div><% } %>
+            </td>
+            <td>
+              <%= o.placa %>
+              <div class="small text-muted"><%= o.marca %> <%= o.modelo %></div>
+            </td>
+            <td class="d-none d-md-table-cell"><%= o.descripcion %></td>
+            <td><span class="badge bg-<%= badgeEstado(o.estado) %>"><%= o.estado %></span></td>
+            <td class="text-end text-nowrap">$<%= (o.costo || 0).toFixed(2) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <div class="text-center text-muted p-5">
+        <i class="bi bi-tools fs-1 d-block mb-2"></i>
+        <p class="mb-0">Aun no tienes ordenes de servicio.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Mis solicitudes recientes -->
+<div class="card mb-4">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h5 class="mb-0"><i class="bi bi-inbox"></i> Mis solicitudes recientes</h5>
+    <a href="/portal/solicitudes" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+  </div>
+  <div class="card-body p-0">
+    <% if (solicitudes && solicitudes.length) { %>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th class="d-none d-sm-table-cell">Vehiculo</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% solicitudes.forEach(function(s) { %>
+          <tr>
+            <td class="text-nowrap"><%= s.fecha ? s.fecha.substring(0, 10) : '-' %></td>
+            <td class="d-none d-sm-table-cell">
+              <%= s.placa %>
+              <div class="small text-muted"><%= s.marca %> <%= s.modelo %></div>
+            </td>
+            <td><%= s.descripcion %></td>
+            <td><span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+      <div class="text-center text-muted p-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        <p class="mb-0">Aun no has enviado solicitudes.</p>
+        <a href="/portal/solicitudes/crear" class="btn btn-sm btn-primary mt-2">
+          <i class="bi bi-plus-lg"></i> Solicitar servicio
+        </a>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
