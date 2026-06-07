@@ -113,7 +113,8 @@
     <h5 class="mb-0"><i class="bi bi-images"></i> Fotos</h5>
   </div>
   <div class="card-body">
-    <form method="POST" action="/fotos/subir" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+    <form method="POST" action="/fotos/subir?_csrf=<%= csrfToken %>" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <input type="hidden" name="vehiculo_id" value="<%= vehiculo.id %>">
       <div class="col-12 col-md-5">
         <label class="form-label" for="fotos-veh">Seleccionar fotos</label>
@@ -148,6 +149,7 @@
           <% } %>
           <form method="POST" action="/fotos/<%= f.id %>/eliminar" class="mt-1"
                 onsubmit="return confirm('Eliminar esta foto?')">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash"></i> Eliminar</button>
           </form>
         </div>

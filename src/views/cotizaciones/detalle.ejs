@@ -20,29 +20,34 @@
     <div class="d-flex flex-wrap gap-2">
       <% if (cotizacion.estado === 'Borrador') { %>
       <form method="POST" action="/cotizaciones/<%= cotizacion.id %>/estado" class="d-inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="estado" value="Enviada">
         <button type="submit" class="btn btn-outline-info"><i class="bi bi-send"></i> Marcar enviada</button>
       </form>
       <% } %>
       <% if (cotizacion.estado === 'Borrador' || cotizacion.estado === 'Enviada') { %>
       <form method="POST" action="/cotizaciones/<%= cotizacion.id %>/estado" class="d-inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="estado" value="Aprobada">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Aprobar</button>
       </form>
       <% } %>
       <% if (cotizacion.estado === 'Borrador' || cotizacion.estado === 'Enviada' || cotizacion.estado === 'Aprobada') { %>
       <form method="POST" action="/cotizaciones/<%= cotizacion.id %>/estado" class="d-inline" onsubmit="return confirm('Rechazar esta cotizacion?')">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="estado" value="Rechazada">
         <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i> Rechazar</button>
       </form>
       <% } %>
       <% if (cotizacion.estado === 'Enviada' || cotizacion.estado === 'Aprobada') { %>
       <form method="POST" action="/cotizaciones/<%= cotizacion.id %>/convertir" class="d-inline" onsubmit="return confirm('Crear una orden de servicio desde esta cotizacion?')">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-primary"><i class="bi bi-tools"></i> Convertir a orden</button>
       </form>
       <% } %>
       <% if (cotizacion.estado !== 'Pagada') { %>
       <form method="POST" action="/cotizaciones/<%= cotizacion.id %>/marcar-pagada" class="d-inline" onsubmit="return confirm('Marcar esta cotizacion como pagada?')">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-dark"><i class="bi bi-cash-coin"></i> Marcar pagada</button>
       </form>
       <% } %>
@@ -51,6 +56,7 @@
 </div>
 
 <form method="POST" action="/cotizaciones/<%= cotizacion.id %>/enviar-correo" class="d-print-none mb-4">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="input-group" style="max-width:480px">
     <span class="input-group-text"><i class="bi bi-envelope"></i></span>
     <input type="email" name="email" class="form-control" value="<%= cotizacion.email || '' %>" placeholder="correo del cliente">

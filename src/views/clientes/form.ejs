@@ -13,6 +13,7 @@
 <% } %>
 
 <form method="POST" action="/clientes<%= cliente.id ? `/${cliente.id}/editar` : '/crear' %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="card mb-3">
     <div class="card-header"><h6 class="mb-0 text-uppercase text-muted"><i class="bi bi-person-vcard"></i> Datos personales</h6></div>
     <div class="card-body">

@@ -34,6 +34,7 @@
             <td class="text-end text-nowrap">
               <a href="/usuarios/<%= u.id %>/editar" class="btn btn-sm btn-outline-primary" title="Editar" aria-label="Editar usuario"><i class="bi bi-pencil"></i></a>
               <form method="POST" action="/usuarios/<%= u.id %>/eliminar" class="d-inline" onsubmit="return confirm('Eliminar este usuario?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar usuario"><i class="bi bi-trash"></i></button>
               </form>
             </td>

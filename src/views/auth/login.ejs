@@ -36,6 +36,7 @@
           <div class="alert alert-danger"><%= error %></div>
         <% } %>
         <form method="POST" action="/auth/login">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="mb-3">
             <label for="usuario" class="form-label">Usuario</label>
             <div class="input-group">

@@ -101,6 +101,7 @@
               </a>
               <form method="POST" action="/servicios/<%= s.id %>/eliminar" class="d-inline"
                     onsubmit="return confirm('Eliminar este servicio?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-danger" title="Eliminar">
                   <i class="bi bi-trash"></i>
                 </button>

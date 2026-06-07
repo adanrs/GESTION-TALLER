@@ -10,6 +10,7 @@
 <% } %>
 
 <form method="POST" action="/cotizaciones<%= cotizacion.id ? `/${cotizacion.id}/editar` : '/crear' %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="row g-3 mb-3">
     <div class="col-md-5">
       <label class="form-label" for="cot-vehiculo">Vehiculo *</label>

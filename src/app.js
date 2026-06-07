@@ -61,6 +61,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// CSRF (synchronizer token por sesion). Protege TODOS los POST/PUT/DELETE.
+// El token se expone en res.locals.csrfToken para inyectarlo como hidden _csrf en los forms.
+// Para forms multipart (multer corre despues), el token se acepta tambien por query (?_csrf=) o header.
+const crypto = require('crypto');
+app.use((req, res, next) => {
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+  }
+  res.locals.csrfToken = req.session.csrfToken;
+
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+
+  const enviado = (req.body && req.body._csrf) || req.query._csrf || req.headers['x-csrf-token'];
+  if (enviado && enviado === req.session.csrfToken) return next();
+
+  return res.status(403).render('partials/error', {
+    title: 'Sesion invalida',
+    message: 'Token de seguridad invalido o expirado. Recarga la pagina e intenta de nuevo.'
+  });
+});
+
 // Auth routes (public)
 app.use('/auth', require('./routes/auth'));
 

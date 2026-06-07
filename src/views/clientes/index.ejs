@@ -65,10 +65,12 @@
               </a>
               <% if (archivados) { %>
               <form method="POST" action="/clientes/<%= c.id %>/restaurar" class="d-inline" onsubmit="return confirm('Restaurar este registro?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-success" title="Restaurar"><i class="bi bi-arrow-counterclockwise"></i></button>
               </form>
               <% } else { %>
               <form method="POST" action="/clientes/<%= c.id %>/eliminar" class="d-inline" onsubmit="return confirm('Archivar este registro?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-danger" title="Archivar"><i class="bi bi-archive"></i></button>
               </form>
               <% } %>

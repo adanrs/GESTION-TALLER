@@ -59,6 +59,7 @@
               <a href="/cotizaciones/<%= c.id %>" class="btn btn-sm btn-outline-info" title="Ver" aria-label="Ver cotizacion"><i class="bi bi-eye"></i></a>
               <a href="/cotizaciones/<%= c.id %>/editar" class="btn btn-sm btn-outline-primary" title="Editar" aria-label="Editar cotizacion"><i class="bi bi-pencil"></i></a>
               <form method="POST" action="/cotizaciones/<%= c.id %>/eliminar" class="d-inline" onsubmit="return confirm('Eliminar esta cotizacion?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button class="btn btn-sm btn-outline-danger" title="Eliminar" aria-label="Eliminar cotizacion"><i class="bi bi-trash"></i></button>
               </form>
             </td>

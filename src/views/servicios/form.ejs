@@ -12,6 +12,7 @@
 <% var estadosCanonicos = ['Pendiente','Asignada','En proceso','Completada','Por cobrar','Cobrada','Cancelada']; %>
 
 <form method="POST" action="/servicios<%= servicio.id ? `/${servicio.id}/editar` : '/crear' %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="row g-3">
     <div class="col-12 col-md-6">
       <label class="form-label" for="srv-vehiculo">Vehiculo *</label>

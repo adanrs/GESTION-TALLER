@@ -64,10 +64,12 @@
     <div class="d-flex flex-wrap gap-2">
       <% if ((esAdmin || esMecanico) && (servicio.estado === 'Pendiente' || servicio.estado === 'Asignada')) { %>
       <form method="POST" action="/servicios/<%= servicio.id %>/iniciar" class="d-inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill"></i> Voy a trabajarla</button>
       </form>
       <% } %>
       <form method="POST" action="/servicios/<%= servicio.id %>/completar" class="d-inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-success <%= faltanTareas ? 'opacity-75' : '' %>"
                 <% if (faltanTareas) { %>title="Faltan tareas por completar (<%= tareasCompletadas %>/<%= totalTareas %>)"<% } %>>
           <i class="bi bi-check2-circle"></i> Completar orden
@@ -75,14 +77,17 @@
       </form>
       <% if (esAdmin) { %>
       <form method="POST" action="/servicios/<%= servicio.id %>/por-cobrar" class="d-inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-primary"><i class="bi bi-receipt"></i> Marcar por cobrar</button>
       </form>
       <form method="POST" action="/servicios/<%= servicio.id %>/cobrar" class="d-inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-dark"><i class="bi bi-cash-coin"></i> Marcar cobrada</button>
       </form>
       <a href="/servicios/<%= servicio.id %>/editar" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
       <form method="POST" action="/servicios/<%= servicio.id %>/eliminar" class="d-inline"
             onsubmit="return confirm('Eliminar este servicio?')">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
       </form>
       <% } %>
@@ -133,6 +138,7 @@
           <% } %>
         </div>
         <form method="POST" action="/servicios/<%= servicio.id %>/tareas/<%= tarea.id %>/toggle" class="flex-shrink-0">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <% if (tarea.completado) { %>
           <button type="submit" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-counterclockwise"></i> Reabrir
@@ -157,6 +163,7 @@
   <div class="card-body">
     <% if (esAdmin || esMecanico) { %>
     <form method="POST" action="/servicios/<%= servicio.id %>/items" class="row g-2 align-items-end mb-3">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="col-12 col-sm-6 col-md-3">
         <label class="form-label" for="item-tipo">Tipo</label>
         <select name="tipo" id="item-tipo" class="form-select">
@@ -218,6 +225,7 @@
             <td class="text-end">
               <form method="POST" action="/servicios/<%= servicio.id %>/items/<%= it.id %>/eliminar" class="d-inline"
                     onsubmit="return confirm('Eliminar este item?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
               </form>
             </td>
@@ -259,6 +267,7 @@
   </div>
   <div class="card-body">
     <form method="POST" action="/servicios/<%= servicio.id %>/comentario" class="mb-3">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <label class="form-label" for="comentario">Agregar comentario</label>
       <textarea name="comentario" id="comentario" class="form-control mb-2" rows="2"
                 placeholder="Escribe una nota o actualizacion sobre esta orden..." required></textarea>
@@ -292,7 +301,8 @@
   </div>
   <div class="card-body">
     <% if (esAdmin || esMecanico) { %>
-    <form method="POST" action="/fotos/subir" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+    <form method="POST" action="/fotos/subir?_csrf=<%= csrfToken %>" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <input type="hidden" name="servicio_id" value="<%= servicio.id %>">
       <div class="col-12 col-md-5">
         <label class="form-label" for="fotos-srv">Seleccionar fotos</label>
@@ -329,6 +339,7 @@
           <% if (esAdmin || esMecanico) { %>
           <form method="POST" action="/fotos/<%= f.id %>/eliminar" class="mt-1"
                 onsubmit="return confirm('Eliminar esta foto?')">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash"></i> Eliminar</button>
           </form>
           <% } %>
