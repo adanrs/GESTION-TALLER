@@ -18,6 +18,9 @@ if (smtpConfigurado) {
     port: SMTP_PORT,
     secure: SMTP_SECURE,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    // En hosting compartido el certificado suele no coincidir con el host (ej. *.registrar-servers.com).
+    // Por defecto se valida; pon SMTP_TLS_REJECT_UNAUTHORIZED=false para aceptarlo igual (sigue cifrado por STARTTLS).
+    tls: { rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false' },
   });
 }
 

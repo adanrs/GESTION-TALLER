@@ -1,3 +1,4 @@
+require('dotenv').config(); // carga variables de .env (local). En Docker, compose ya inyecta el entorno.
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
