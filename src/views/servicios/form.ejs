@@ -10,6 +10,7 @@
 <% } %>
 
 <% var estadosCanonicos = ['Pendiente','Asignada','En proceso','Completada','Por cobrar','Cobrada','Cancelada']; %>
+<% var simSrv = simbolo(servicio.moneda || 'USD'); %>
 
 <form method="POST" action="/servicios<%= servicio.id ? `/${servicio.id}/editar` : '/crear' %>">
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -49,8 +50,25 @@
       <input type="text" name="tecnico" id="srv-tecnico" class="form-control" value="<%= servicio.tecnico || '' %>">
     </div>
     <div class="col-6 col-md-3">
-      <label class="form-label" for="srv-costo">Costo mano de obra ($)</label>
-      <input type="number" name="costo" id="srv-costo" class="form-control" step="0.01" min="0" value="<%= servicio.costo || '0' %>">
+      <label class="form-label" for="select-moneda">Moneda</label>
+      <select name="moneda" class="form-select" id="select-moneda">
+        <option value="USD" <%= (servicio.moneda || 'USD') === 'USD' ? 'selected' : '' %>>$ USD</option>
+        <option value="CRC" <%= servicio.moneda === 'CRC' ? 'selected' : '' %>>&#8353; CRC</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="input-tc">T. Cambio</label>
+      <input type="number" name="tipo_cambio" id="input-tc" class="form-control" step="0.01" min="0" value="<%= servicio.tipo_cambio || 515 %>">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="srv-costo">Costo mano de obra</label>
+      <div class="input-group">
+        <span class="input-group-text" id="simbolo-costo"><%= simSrv %></span>
+        <input type="number" name="costo" id="srv-costo" class="form-control" step="0.01" min="0" value="<%= servicio.costo || '0' %>">
+      </div>
+    </div>
+    <div class="col-12">
+      <div id="aviso-moneda" class="alert alert-warning py-2 small mb-0 d-none" role="alert"></div>
     </div>
     <div class="col-12">
       <label class="form-label" for="srv-descripcion">Descripcion del servicio *</label>
@@ -116,7 +134,7 @@
           <td><input type="text" name="item_descripcion" class="form-control form-control-sm" aria-label="Descripcion del repuesto" value="<%= it.descripcion || '' %>"></td>
           <td><input type="number" name="item_cantidad" class="form-control form-control-sm item-calc" aria-label="Cantidad" step="0.01" min="0.01" value="<%= it.cantidad || 1 %>"></td>
           <td><input type="number" name="item_precio" class="form-control form-control-sm item-calc" aria-label="Precio unitario" step="0.01" min="0" value="<%= it.precio_unitario || 0 %>"></td>
-          <td class="item-subtotal text-end fw-bold">$<%= ((it.cantidad || 1) * (it.precio_unitario || 0)).toFixed(2) %></td>
+          <td class="item-subtotal text-end fw-bold"><%= simSrv %><%= ((it.cantidad || 1) * (it.precio_unitario || 0)).toFixed(2) %></td>
           <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar-item" aria-label="Quitar repuesto"><i class="bi bi-x-lg"></i></button></td>
         </tr>
         <% }) %>
@@ -124,7 +142,7 @@
       <tfoot>
         <tr>
           <td colspan="4" class="text-end"><strong>Total repuestos:</strong></td>
-          <td class="text-end fw-bold" id="total-items">$0.00</td>
+          <td class="text-end fw-bold" id="total-items"><%= simSrv %>0.00</td>
           <td></td>
         </tr>
       </tfoot>
@@ -143,7 +161,7 @@
       <td><input type="text" name="item_descripcion" class="form-control form-control-sm" aria-label="Descripcion del repuesto"></td>
       <td><input type="number" name="item_cantidad" class="form-control form-control-sm item-calc" aria-label="Cantidad" step="0.01" min="0.01" value="1"></td>
       <td><input type="number" name="item_precio" class="form-control form-control-sm item-calc" aria-label="Precio unitario" step="0.01" min="0" value="0"></td>
-      <td class="item-subtotal text-end fw-bold">$0.00</td>
+      <td class="item-subtotal text-end fw-bold"><%= simSrv %>0.00</td>
       <td><button type="button" class="btn btn-sm btn-outline-danger btn-quitar-item" aria-label="Quitar repuesto"><i class="bi bi-x-lg"></i></button></td>
     </tr>
   </template>

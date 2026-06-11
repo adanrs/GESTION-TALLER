@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const audit = require('../lib/auditoria');
 const mailer = require('../lib/mailer');
+const moneda = require('../lib/moneda');
 
 // ---------------------------------------------------------------------------
 // Guard: solo encargado (admin)
@@ -204,18 +205,24 @@ router.get('/:id/historial', (req, res) => {
     ORDER BY cot.fecha DESC
   `).all(id);
 
-  // KPIs del cliente
+  // KPIs del cliente (gastado separado por moneda: no se suman USD y CRC)
   const kpiRow = db.prepare(`
     SELECT
       COUNT(DISTINCT v.id)                                          AS total_vehiculos,
       COUNT(DISTINCT s.id)                                          AS total_ordenes,
       MAX(s.fecha)                                                  AS ultima_visita,
-      COALESCE(SUM(CASE WHEN s.cobrado = 1
+      COALESCE(SUM(CASE WHEN s.cobrado = 1 AND COALESCE(s.moneda,'USD') <> 'CRC'
         THEN s.costo + COALESCE((
           SELECT SUM(si2.cantidad * si2.precio_unitario)
           FROM servicio_items si2 WHERE si2.servicio_id = s.id
         ), 0)
-        ELSE 0 END), 0)                                             AS total_gastado
+        ELSE 0 END), 0)                                             AS total_gastado_usd,
+      COALESCE(SUM(CASE WHEN s.cobrado = 1 AND s.moneda = 'CRC'
+        THEN s.costo + COALESCE((
+          SELECT SUM(si2.cantidad * si2.precio_unitario)
+          FROM servicio_items si2 WHERE si2.servicio_id = s.id
+        ), 0)
+        ELSE 0 END), 0)                                             AS total_gastado_crc
     FROM vehiculos v
     LEFT JOIN servicios s ON s.vehiculo_id = v.id
     WHERE v.cliente_id = ?
@@ -225,7 +232,7 @@ router.get('/:id/historial', (req, res) => {
     total_vehiculos : kpiRow.total_vehiculos  || 0,
     total_ordenes   : kpiRow.total_ordenes    || 0,
     ultima_visita   : kpiRow.ultima_visita    || null,
-    total_gastado   : kpiRow.total_gastado    || 0
+    total_gastado   : moneda.fmtTotales(kpiRow.total_gastado_usd, kpiRow.total_gastado_crc)
   };
 
   // Construir array de eventos unificados ordenados por fecha DESC
@@ -240,6 +247,7 @@ router.get('/:id/historial', (req, res) => {
       estado        : s.estado,
       mecanico_nombre: s.mecanico_nombre || null,
       total         : s.costo + s.total_repuestos,
+      moneda        : s.moneda || 'USD',
       placa         : s.placa,
       resumen       : s.descripcion
     });
@@ -254,6 +262,7 @@ router.get('/:id/historial', (req, res) => {
       estado        : cot.estado,
       mecanico_nombre: null,
       total         : cot.total,
+      moneda        : cot.moneda || 'USD',
       placa         : cot.placa,
       resumen       : cot.notas   || null
     });

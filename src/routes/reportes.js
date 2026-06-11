@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const db = require('../db/database');
 const { rutaSegura } = require('../lib/uploads');
+const moneda = require('../lib/moneda');
 
 // ── Guard: solo encargado (admin) ───────────────────────────────────────────
 function soloAdmin(req, res, next) {
@@ -215,11 +216,14 @@ function streamReporteVehiculo(res, vehiculoId) {
     doc.fillColor('#000000');
     y += 16;
   } else {
-    let totalGeneral = 0;
+    // Totales separados por moneda: no se suman USD y CRC
+    let totalUsd = 0, totalCrc = 0;
 
     servicios.forEach((s, idx) => {
       const items = itemsStmt.all(s.id);
       const tareas = tareasStmt.all(s.id);
+      const monS = s.moneda || 'USD';
+      const simS = simboloPDF(monS);
 
       // Altura estimada minima para este servicio
       const estimado = 50 + items.length * 13 + (tareas.length > 0 ? tareas.length * 11 + 10 : 0);
@@ -240,7 +244,7 @@ function streamReporteVehiculo(res, vehiculoId) {
       doc.text(`Mecanico: ${s.mecanico_nombre || '-'}`, col1, y, { width: W / 3 - 4 });
       doc.text(`Km: ${s.kilometraje || '-'}`, col2, y, { width: W / 3 - 4 });
       const costoServicio = parseFloat(s.costo) || 0;
-      doc.text(`Costo mano de obra: ${simboloPDF('USD')}${costoServicio.toFixed(2)}`, col3, y, { width: W / 3 });
+      doc.text(`Costo mano de obra: ${simS}${costoServicio.toFixed(2)}`, col3, y, { width: W / 3 });
       y += 12;
 
       // Items / repuestos
@@ -266,8 +270,8 @@ function streamReporteVehiculo(res, vehiculoId) {
           doc.fontSize(7).font('Helvetica');
           doc.text(it.descripcion || '-', L + 8, y, { width: 220 });
           doc.text(String(it.cantidad || 0), L + 230, y, { width: 40, align: 'right' });
-          doc.text(`${simboloPDF('USD')}${(parseFloat(it.precio_unitario) || 0).toFixed(2)}`, L + 275, y, { width: 65, align: 'right' });
-          doc.text(`${simboloPDF('USD')}${sub.toFixed(2)}`, L + 345, y, { width: 70, align: 'right' });
+          doc.text(`${simS}${(parseFloat(it.precio_unitario) || 0).toFixed(2)}`, L + 275, y, { width: 65, align: 'right' });
+          doc.text(`${simS}${sub.toFixed(2)}`, L + 345, y, { width: 70, align: 'right' });
           y += 12;
         });
       }
@@ -288,11 +292,11 @@ function streamReporteVehiculo(res, vehiculoId) {
 
       // Subtotal del servicio
       const subtotalServicio = costoServicio + (parseFloat(s.total_repuestos) || 0);
-      totalGeneral += subtotalServicio;
+      if (monS === 'CRC') totalCrc += subtotalServicio; else totalUsd += subtotalServicio;
 
       doc.fontSize(8).font('Helvetica-Bold');
-      doc.text(`Subtotal servicio:`, R - 200, y, { width: 130, align: 'right' });
-      doc.text(`${simboloPDF('USD')}${subtotalServicio.toFixed(2)}`, R - 70, y, { width: 70, align: 'right' });
+      doc.text(`Subtotal servicio (${monS}):`, R - 200, y, { width: 130, align: 'right' });
+      doc.text(`${simS}${subtotalServicio.toFixed(2)}`, R - 70, y, { width: 70, align: 'right' });
       doc.font('Helvetica');
       y += 12;
 
@@ -302,12 +306,12 @@ function streamReporteVehiculo(res, vehiculoId) {
       y += 6;
     });
 
-    // Total general de servicios
+    // Total general de servicios (por moneda, sin mezclar)
     y = checkPage(doc, y, 720);
-    doc.rect(R - 210, y - 2, 210, 20).fill('#1a1a2e');
+    doc.rect(R - 290, y - 2, 290, 20).fill('#1a1a2e');
     doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-    doc.text('TOTAL SERVICIOS:', R - 210, y + 2, { width: 135, align: 'right' });
-    doc.text(`${simboloPDF('USD')}${totalGeneral.toFixed(2)}`, R - 75, y + 2, { width: 75, align: 'right' });
+    doc.text('TOTAL SERVICIOS:', R - 290, y + 2, { width: 130, align: 'right' });
+    doc.text(moneda.fmtTotales(totalUsd, totalCrc), R - 155, y + 2, { width: 155, align: 'right' });
     doc.fillColor('#000000');
     y += 28;
   }
@@ -541,11 +545,12 @@ router.get('/cliente/:id', (req, res) => {
   // ── KPIs ───────────────────────────────────────────────────────────────────
   const totalOrdenes = servicios.length;
   const serviciosCobrados = servicios.filter(s => s.estado === 'Cobrado' || s.cobrado === 1);
-  const totalGastado = serviciosCobrados.reduce((acc, s) => {
-    return acc + (parseFloat(s.costo) || 0) + (parseFloat(s.total_repuestos) || 0);
-  }, 0);
+  // Gastado separado por moneda: no se suman USD y CRC
+  const sumaServicio = (acc, s) => acc + (parseFloat(s.costo) || 0) + (parseFloat(s.total_repuestos) || 0);
+  const gastadoUsd = serviciosCobrados.filter(s => (s.moneda || 'USD') !== 'CRC').reduce(sumaServicio, 0);
+  const gastadoCrc = serviciosCobrados.filter(s => s.moneda === 'CRC').reduce(sumaServicio, 0);
 
-  // Detectar monedas mixtas en cotizaciones (todas estan en USD en servicios)
+  // Detectar monedas mixtas en cotizaciones
   const monedasEnCot = [...new Set(cotizaciones.map(c => c.moneda || 'USD'))];
   const hayMonedasMixtas = monedasEnCot.length > 1;
 
@@ -585,7 +590,7 @@ router.get('/cliente/:id', (req, res) => {
   doc.fontSize(9).text(`Vehiculos: ${vehiculos.length}`, colMid, vyR); vyR += 11;
   doc.text(`Total ordenes: ${totalOrdenes}`, colMid, vyR); vyR += 11;
   doc.text(`Ordenes cobradas: ${serviciosCobrados.length}`, colMid, vyR); vyR += 11;
-  doc.font('Helvetica-Bold').text(`Total gastado: ${simboloPDF('USD')}${totalGastado.toFixed(2)}`, colMid, vyR);
+  doc.font('Helvetica-Bold').text(`Total gastado: ${moneda.fmtTotales(gastadoUsd, gastadoCrc)}`, colMid, vyR);
   doc.font('Helvetica'); vyR += 11;
 
   y = Math.max(vyL, vyR) + 14;
@@ -641,11 +646,14 @@ router.get('/cliente/:id', (req, res) => {
     const itemsStmt = db.prepare('SELECT * FROM servicio_items WHERE servicio_id = ? ORDER BY id');
     const tareasStmt = db.prepare('SELECT * FROM servicio_tareas WHERE servicio_id = ? ORDER BY orden, id');
 
-    let totalGeneral = 0;
+    // Totales separados por moneda: no se suman USD y CRC
+    let totalUsd = 0, totalCrc = 0;
 
     servicios.forEach((s, idx) => {
       const items = itemsStmt.all(s.id);
       const tareas = tareasStmt.all(s.id);
+      const monS = s.moneda || 'USD';
+      const simS = simboloPDF(monS);
 
       const estimado = 50 + items.length * 13 + (tareas.length > 0 ? tareas.length * 11 + 10 : 0);
       y = checkPage(doc, y, 720 - Math.min(estimado, 80));
@@ -668,7 +676,7 @@ router.get('/cliente/:id', (req, res) => {
       doc.text(`Mecanico: ${s.mecanico_nombre || '-'}`, col1, y, { width: W / 3 - 4 });
       doc.text(`Km: ${s.kilometraje || '-'}`, col2, y, { width: W / 3 - 4 });
       const costoServicio = parseFloat(s.costo) || 0;
-      doc.text(`Costo mano de obra: ${simboloPDF('USD')}${costoServicio.toFixed(2)}`, col3, y, { width: W / 3 });
+      doc.text(`Costo mano de obra: ${simS}${costoServicio.toFixed(2)}`, col3, y, { width: W / 3 });
       y += 12;
 
       // Items / repuestos
@@ -694,8 +702,8 @@ router.get('/cliente/:id', (req, res) => {
           doc.fontSize(7).font('Helvetica');
           doc.text(it.descripcion || '-', L + 8, y, { width: 220 });
           doc.text(String(it.cantidad || 0), L + 230, y, { width: 40, align: 'right' });
-          doc.text(`${simboloPDF('USD')}${(parseFloat(it.precio_unitario) || 0).toFixed(2)}`, L + 275, y, { width: 65, align: 'right' });
-          doc.text(`${simboloPDF('USD')}${sub.toFixed(2)}`, L + 345, y, { width: 70, align: 'right' });
+          doc.text(`${simS}${(parseFloat(it.precio_unitario) || 0).toFixed(2)}`, L + 275, y, { width: 65, align: 'right' });
+          doc.text(`${simS}${sub.toFixed(2)}`, L + 345, y, { width: 70, align: 'right' });
           y += 12;
         });
       }
@@ -716,11 +724,11 @@ router.get('/cliente/:id', (req, res) => {
 
       // Subtotal del servicio
       const subtotalServicio = costoServicio + (parseFloat(s.total_repuestos) || 0);
-      totalGeneral += subtotalServicio;
+      if (monS === 'CRC') totalCrc += subtotalServicio; else totalUsd += subtotalServicio;
 
       doc.fontSize(8).font('Helvetica-Bold');
-      doc.text('Subtotal servicio:', R - 200, y, { width: 130, align: 'right' });
-      doc.text(`${simboloPDF('USD')}${subtotalServicio.toFixed(2)}`, R - 70, y, { width: 70, align: 'right' });
+      doc.text(`Subtotal servicio (${monS}):`, R - 200, y, { width: 130, align: 'right' });
+      doc.text(`${simS}${subtotalServicio.toFixed(2)}`, R - 70, y, { width: 70, align: 'right' });
       doc.font('Helvetica');
       y += 12;
 
@@ -730,22 +738,22 @@ router.get('/cliente/:id', (req, res) => {
       y += 6;
     });
 
-    // Subtotal de servicios cobrados
+    // Subtotal de servicios cobrados (por moneda, sin mezclar)
     y = checkPage(doc, y, 720);
     doc.fontSize(8).font('Helvetica').fillColor('#555555');
     doc.text(
       `Subtotal cobrado (${serviciosCobrados.length} orden${serviciosCobrados.length !== 1 ? 'es' : ''} Cobrada${serviciosCobrados.length !== 1 ? 's' : ''}):`,
-      R - 280, y, { width: 210, align: 'right' }
+      R - 320, y, { width: 210, align: 'right' }
     );
-    doc.text(`${simboloPDF('USD')}${totalGastado.toFixed(2)}`, R - 70, y, { width: 70, align: 'right' });
+    doc.text(moneda.fmtTotales(gastadoUsd, gastadoCrc), R - 110, y, { width: 110, align: 'right' });
     doc.fillColor('#000000');
     y += 14;
 
-    // Total general de todos los servicios
-    doc.rect(R - 210, y - 2, 210, 20).fill('#1a1a2e');
+    // Total general de todos los servicios (por moneda, sin mezclar)
+    doc.rect(R - 290, y - 2, 290, 20).fill('#1a1a2e');
     doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold');
-    doc.text('TOTAL SERVICIOS:', R - 210, y + 2, { width: 135, align: 'right' });
-    doc.text(`${simboloPDF('USD')}${totalGeneral.toFixed(2)}`, R - 75, y + 2, { width: 75, align: 'right' });
+    doc.text('TOTAL SERVICIOS:', R - 290, y + 2, { width: 130, align: 'right' });
+    doc.text(moneda.fmtTotales(totalUsd, totalCrc), R - 155, y + 2, { width: 155, align: 'right' });
     doc.fillColor('#000000');
     y += 28;
   }

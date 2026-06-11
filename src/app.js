@@ -97,6 +97,10 @@ app.use((req, res, next) => {
 const { badgeEstado } = require('./lib/estados');
 app.use((req, res, next) => { res.locals.badgeEstado = badgeEstado; next(); });
 
+// Helper de simbolo de moneda (USD/CRC) disponible en todas las vistas
+const moneda = require('./lib/moneda');
+app.use((req, res, next) => { res.locals.simbolo = moneda.simbolo; next(); });
+
 // Roles y control de acceso por rol
 app.use((req, res, next) => {
   const rol = req.session.usuario?.rol;

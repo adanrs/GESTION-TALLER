@@ -61,8 +61,8 @@
             <td><%= s.descripcion %></td>
             <td><%= s.kilometraje || '-' %></td>
             <td><%= s.mecanico_nombre || '-' %></td>
-            <td>$<%= (s.costo || 0).toFixed(2) %></td>
-            <td>$<%= (s.total_repuestos || 0).toFixed(2) %></td>
+            <td><%= simbolo(s.moneda) %><%= (s.costo || 0).toFixed(2) %></td>
+            <td><%= simbolo(s.moneda) %><%= (s.total_repuestos || 0).toFixed(2) %></td>
             <td>
               <span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span>
             </td>

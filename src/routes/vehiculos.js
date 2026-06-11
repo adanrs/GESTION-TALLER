@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 const audit = require('../lib/auditoria');
+const moneda = require('../lib/moneda');
 
 // ---------------------------------------------------------------------------
 // Marcas ya registradas (para autocompletar en el formulario)
@@ -230,19 +231,25 @@ router.get('/:id/historial', (req, res) => {
     ORDER BY cot.fecha DESC
   `).all(id);
 
-  // KPIs del vehiculo
+  // KPIs del vehiculo (facturado separado por moneda: no se suman USD y CRC)
   const kpiRow = db.prepare(`
     SELECT
       COUNT(*)                  AS total_ordenes,
       SUM(cobrado)              AS ordenes_cobradas,
       MAX(fecha)                AS ultima_visita,
       MAX(kilometraje)          AS ultimo_km,
-      COALESCE(SUM(CASE WHEN cobrado = 1
+      COALESCE(SUM(CASE WHEN cobrado = 1 AND COALESCE(moneda,'USD') <> 'CRC'
         THEN costo + COALESCE((
           SELECT SUM(si2.cantidad * si2.precio_unitario)
           FROM servicio_items si2 WHERE si2.servicio_id = servicios.id
         ), 0)
-        ELSE 0 END), 0)         AS total_facturado
+        ELSE 0 END), 0)         AS total_facturado_usd,
+      COALESCE(SUM(CASE WHEN cobrado = 1 AND moneda = 'CRC'
+        THEN costo + COALESCE((
+          SELECT SUM(si2.cantidad * si2.precio_unitario)
+          FROM servicio_items si2 WHERE si2.servicio_id = servicios.id
+        ), 0)
+        ELSE 0 END), 0)         AS total_facturado_crc
     FROM servicios
     WHERE vehiculo_id = ?
   `).get(id);
@@ -253,7 +260,7 @@ router.get('/:id/historial', (req, res) => {
     ultima_visita   : kpiRow.ultima_visita    || null,
     ultimo_km       : kpiRow.ultimo_km        || null,
     // Ocultar montos al mecanico
-    total_facturado : esMecanico ? null : (kpiRow.total_facturado || 0)
+    total_facturado : esMecanico ? null : moneda.fmtTotales(kpiRow.total_facturado_usd, kpiRow.total_facturado_crc)
   };
 
   // Construir array de eventos unificados
@@ -269,6 +276,7 @@ router.get('/:id/historial', (req, res) => {
       mecanico_nombre : s.mecanico_nombre || null,
       // Ocultar montos al mecanico
       total           : esMecanico ? null : (s.costo + s.total_repuestos),
+      moneda          : s.moneda || 'USD',
       placa           : vehiculo.placa,
       resumen         : s.descripcion
     });
@@ -284,6 +292,7 @@ router.get('/:id/historial', (req, res) => {
       mecanico_nombre : null,
       // Ocultar montos al mecanico
       total           : esMecanico ? null : cot.total,
+      moneda          : cot.moneda || 'USD',
       placa           : vehiculo.placa,
       resumen         : cot.notas         || null
     });

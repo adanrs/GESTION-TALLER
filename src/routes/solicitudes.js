@@ -212,10 +212,16 @@ router.post('/:id/convertir', (req, res) => {
   const convertir = db.transaction(() => {
     const descripcionOrden = `Generada desde solicitud #${solId}: ${solicitud.descripcion}`;
 
+    // Moneda y tipo de cambio por defecto desde configuracion
+    const cfgMoneda = db.prepare("SELECT valor FROM configuracion WHERE clave = 'moneda'").get();
+    const cfgTC     = db.prepare("SELECT valor FROM configuracion WHERE clave = 'tipo_cambio_crc'").get();
+
     const infoServicio = db.prepare(`
-      INSERT INTO servicios (vehiculo_id, numero, descripcion, estado, costo)
-      VALUES (?, ?, ?, 'Pendiente', 0)
-    `).run(solicitud.vehiculo_id, folio, descripcionOrden);
+      INSERT INTO servicios (vehiculo_id, numero, descripcion, estado, costo, moneda, tipo_cambio)
+      VALUES (?, ?, ?, 'Pendiente', 0, ?, ?)
+    `).run(solicitud.vehiculo_id, folio, descripcionOrden,
+           (cfgMoneda && cfgMoneda.valor === 'CRC') ? 'CRC' : 'USD',
+           cfgTC ? (parseFloat(cfgTC.valor) || 0) : 0);
 
     const nuevoServicioId = infoServicio.lastInsertRowid;
 

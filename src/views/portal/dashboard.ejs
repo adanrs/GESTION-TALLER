@@ -70,7 +70,7 @@
             </td>
             <td class="d-none d-md-table-cell"><%= o.descripcion %></td>
             <td><span class="badge bg-<%= badgeEstado(o.estado) %>"><%= o.estado %></span></td>
-            <td class="text-end text-nowrap">$<%= (o.costo || 0).toFixed(2) %></td>
+            <td class="text-end text-nowrap"><%= simbolo(o.moneda) %><%= (o.costo || 0).toFixed(2) %></td>
           </tr>
           <% }) %>
         </tbody>

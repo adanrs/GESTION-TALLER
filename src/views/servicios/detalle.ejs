@@ -2,6 +2,8 @@
 
 <%
   var faltanTareas = (totalTareas > 0 && tareasCompletadas < totalTareas);
+  var monSrv = servicio.moneda || 'USD';
+  var simSrv = simbolo(monSrv);
 %>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -40,7 +42,7 @@
       <div class="col-4 col-md-2"><strong>Km:</strong> <%= servicio.kilometraje || '-' %></div>
       <div class="col-4 col-md-2"><strong>Tecnico:</strong> <%= servicio.tecnico || '-' %></div>
       <% if (esAdmin) { %>
-      <div class="col-4 col-md-2"><strong>Mano de obra:</strong> $<%= (servicio.costo || 0).toFixed(2) %></div>
+      <div class="col-4 col-md-2"><strong>Mano de obra:</strong> <%= simSrv %><%= (servicio.costo || 0).toFixed(2) %></div>
       <% } %>
     </div>
     <div class="row g-2 mt-1">
@@ -218,8 +220,8 @@
             <td><%= it.descripcion %></td>
             <td class="text-center"><%= it.cantidad %></td>
             <% if (esAdmin) { %>
-            <td class="text-end">$<%= it.precio_unitario.toFixed(2) %></td>
-            <td class="text-end">$<%= (it.cantidad * it.precio_unitario).toFixed(2) %></td>
+            <td class="text-end"><%= simSrv %><%= it.precio_unitario.toFixed(2) %></td>
+            <td class="text-end"><%= simSrv %><%= (it.cantidad * it.precio_unitario).toFixed(2) %></td>
             <% } %>
             <% if (esAdmin || esMecanico) { %>
             <td class="text-end">
@@ -237,19 +239,30 @@
         <tfoot>
           <tr>
             <td colspan="5" class="text-end"><strong>Total repuestos:</strong></td>
-            <td class="text-end fw-bold">$<%= totalItems.toFixed(2) %></td>
+            <td class="text-end fw-bold"><%= simSrv %><%= totalItems.toFixed(2) %></td>
             <td></td>
           </tr>
           <tr>
             <td colspan="5" class="text-end"><strong>Mano de obra:</strong></td>
-            <td class="text-end fw-bold">$<%= (servicio.costo || 0).toFixed(2) %></td>
+            <td class="text-end fw-bold"><%= simSrv %><%= (servicio.costo || 0).toFixed(2) %></td>
             <td></td>
           </tr>
           <tr class="table-dark">
-            <td colspan="5" class="text-end"><strong>TOTAL SERVICIO:</strong></td>
-            <td class="text-end fw-bold fs-5">$<%= (totalItems + (servicio.costo || 0)).toFixed(2) %></td>
+            <td colspan="5" class="text-end"><strong>TOTAL SERVICIO (<%= monSrv %>):</strong></td>
+            <td class="text-end fw-bold fs-5"><%= simSrv %><%= (totalItems + (servicio.costo || 0)).toFixed(2) %></td>
             <td></td>
           </tr>
+          <% var tcSrv = servicio.tipo_cambio || 0; %>
+          <% if (tcSrv > 0) {
+               var altMon = monSrv === 'USD' ? 'CRC' : 'USD';
+               var totSrv = totalItems + (servicio.costo || 0);
+               var convSrv = monSrv === 'USD' ? totSrv * tcSrv : totSrv / tcSrv; %>
+          <tr>
+            <td colspan="5" class="text-end text-muted">Equivalente en <%= altMon %> (T.C. <%= tcSrv %>):</td>
+            <td class="text-end text-muted"><%= simbolo(altMon) %><%= convSrv.toFixed(2) %></td>
+            <td></td>
+          </tr>
+          <% } %>
         </tfoot>
         <% } %>
       </table>

@@ -4,6 +4,13 @@ const PDFDocument = require('pdfkit');
 const db = require('../db/database');
 const estados = require('../lib/estados');
 const audit   = require('../lib/auditoria');
+const moneda  = require('../lib/moneda');
+
+function getConfig(clave) {
+  const row = db.prepare('SELECT valor FROM configuracion WHERE clave = ?').get(clave);
+  return row ? row.valor : '';
+}
+function getTipoCambio() { return parseFloat(getConfig('tipo_cambio_crc')) || 515; }
 
 // ---------------------------------------------------------------------------
 // HELPERS
@@ -187,7 +194,12 @@ router.get('/', (req, res) => {
 router.get('/crear', soloAdmin, (req, res) => {
   res.render('servicios/form', {
     title: 'Nuevo Servicio',
-    servicio:  { vehiculo_id: req.query.vehiculo_id || '', items: [], tareas: [] },
+    servicio:  {
+      vehiculo_id: req.query.vehiculo_id || '',
+      moneda:      getConfig('moneda') || 'USD',
+      tipo_cambio: getTipoCambio(),
+      items: [], tareas: []
+    },
     vehiculos:  getVehiculos(),
     mecanicos:  getMecanicos(),
     errors:    []
@@ -199,6 +211,8 @@ router.get('/crear', soloAdmin, (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/crear', soloAdmin, (req, res) => {
   const { vehiculo_id, descripcion, kilometraje, tecnico, estado, costo, notas } = req.body;
+  const mon = moneda.normalizar(req.body.moneda);
+  const tc  = parseFloat(req.body.tipo_cambio) || getTipoCambio();
   // mecanico_id puede venir vacio -> NULL
   const mecanico_id = req.body.mecanico_id ? parseInt(req.body.mecanico_id, 10) : null;
   const items  = parseItems(req.body);
@@ -230,7 +244,7 @@ router.post('/crear', soloAdmin, (req, res) => {
   const numero = generarNumeroOrden();
 
   const insertServ = db.prepare(
-    'INSERT INTO servicios (numero, vehiculo_id, descripcion, kilometraje, tecnico, estado, costo, notas, mecanico_id) VALUES (?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO servicios (numero, vehiculo_id, descripcion, kilometraje, tecnico, estado, costo, notas, mecanico_id, moneda, tipo_cambio) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
   );
   const insertItem  = db.prepare('INSERT INTO servicio_items (servicio_id, tipo, descripcion, cantidad, precio_unitario) VALUES (?,?,?,?,?)');
   const insertTarea = db.prepare('INSERT INTO servicio_tareas (servicio_id, descripcion, completado, orden) VALUES (?,?,0,?)');
@@ -239,7 +253,7 @@ router.post('/crear', soloAdmin, (req, res) => {
   db.transaction(() => {
     const result = insertServ.run(
       numero, vehiculo_id, descripcion.trim(), kilometraje || null,
-      tecnico?.trim(), estadoFinal, costo || 0, notas?.trim(), mecanico_id
+      tecnico?.trim(), estadoFinal, costo || 0, notas?.trim(), mecanico_id, mon, tc
     );
     servId = result.lastInsertRowid;
     for (const it of items) {
@@ -360,6 +374,8 @@ router.get('/:id/pdf', (req, res) => {
 
   const esAdmin = usuario?.rol === 'admin';
   const folio   = servicio.numero || ('#' + servicio.id);
+  const monServ = servicio.moneda || 'USD';
+  const simServ = moneda.simbolo(monServ);
 
   // ── Construccion del PDF ──────────────────────────────────────────────────
   const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
@@ -404,12 +420,13 @@ router.get('/:id/pdf', (req, res) => {
   doc.text('Folio: ' + folio,                                              rx, 76,  { width: rw, align: 'right' });
   doc.text('Fecha: ' + (servicio.fecha ? servicio.fecha.substring(0, 10) : ''), rx, 89,  { width: rw, align: 'right' });
   doc.text('Estado: ' + (servicio.estado || ''),                           rx, 102, { width: rw, align: 'right' });
+  doc.text('Moneda: ' + (monServ === 'CRC' ? 'Colones (CRC)' : 'Dolares (USD)'), rx, 115, { width: rw, align: 'right' });
   if (servicio.kilometraje) {
-    doc.text('Kilometraje: ' + servicio.kilometraje + ' km',               rx, 115, { width: rw, align: 'right' });
+    doc.text('Kilometraje: ' + servicio.kilometraje + ' km',               rx, 128, { width: rw, align: 'right' });
   }
 
   // Divisor
-  const divY = Math.max(hy, 128) + 10;
+  const divY = Math.max(hy, 141) + 10;
   hline(divY, '#333333', 2);
 
   // ── CLIENTE + VEHICULO: 2 columnas ────────────────────────────────────────
@@ -538,7 +555,7 @@ router.get('/:id/pdf', (req, res) => {
       doc.text(String(it.cantidad), col.cant, bodyY, { width: 45, align: 'right' });
       if (esAdmin) {
         const fmt = function(n) {
-          return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return simServ + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
         doc.text(fmt(it.precio_unitario),           col.pUnit, bodyY, { width: 65, align: 'right' });
         doc.text(fmt(it.cantidad * it.precio_unitario), col.sub, bodyY, { width: 72, align: 'right' });
@@ -553,7 +570,7 @@ router.get('/:id/pdf', (req, res) => {
       bodyY += 8;
 
       const fmt = function(n) {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return simServ + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       };
       const totalItems = items.reduce(function(s, it) { return s + it.cantidad * it.precio_unitario; }, 0);
       const costoMO    = parseFloat(servicio.costo) || 0;
@@ -577,6 +594,18 @@ router.get('/:id/pdf', (req, res) => {
       doc.text(fmt(totalFinal), totVX, bodyY + 2, { width: 72, align: 'right' });
       doc.fillColor('#000000');
       bodyY += 28;
+
+      // Equivalente en la otra moneda segun el tipo de cambio congelado en la orden
+      const tcServ = parseFloat(servicio.tipo_cambio) || 0;
+      if (tcServ > 0 && totalFinal > 0) {
+        const altMon = monServ === 'USD' ? 'CRC' : 'USD';
+        const conv   = monServ === 'USD' ? totalFinal * tcServ : totalFinal / tcServ;
+        doc.fontSize(8).font('Helvetica').fillColor('#555555')
+           .text(`Equivalente en ${altMon} (T.C. ${tcServ}): ${moneda.simbolo(altMon)}${conv.toFixed(2)}`,
+                 totX - 5, bodyY - 8, { width: R - totX + 5, align: 'right' });
+        doc.fillColor('#000000');
+        bodyY += 8;
+      }
     }
   }
 
@@ -644,6 +673,8 @@ router.get('/:id/editar', soloAdmin, (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/:id/editar', soloAdmin, (req, res) => {
   const { vehiculo_id, descripcion, kilometraje, tecnico, estado, costo, notas } = req.body;
+  const mon = moneda.normalizar(req.body.moneda);
+  const tc  = parseFloat(req.body.tipo_cambio) || getTipoCambio();
   const mecanico_id = req.body.mecanico_id ? parseInt(req.body.mecanico_id, 10) : null;
   const items  = parseItems(req.body);
   const tareas = parseTareas(req.body);
@@ -695,7 +726,7 @@ router.post('/:id/editar', soloAdmin, (req, res) => {
   const prevMap    = new Map(prevTareas.map(t => [t.descripcion.toLowerCase().trim(), t]));
 
   const updateServ  = db.prepare(
-    'UPDATE servicios SET vehiculo_id=?, descripcion=?, kilometraje=?, tecnico=?, estado=?, costo=?, notas=?, mecanico_id=? WHERE id=?'
+    'UPDATE servicios SET vehiculo_id=?, descripcion=?, kilometraje=?, tecnico=?, estado=?, costo=?, notas=?, mecanico_id=?, moneda=?, tipo_cambio=? WHERE id=?'
   );
   const deleteItems  = db.prepare('DELETE FROM servicio_items  WHERE servicio_id=?');
   const insertItem   = db.prepare('INSERT INTO servicio_items (servicio_id, tipo, descripcion, cantidad, precio_unitario) VALUES (?,?,?,?,?)');
@@ -703,7 +734,7 @@ router.post('/:id/editar', soloAdmin, (req, res) => {
   const insertTarea  = db.prepare('INSERT INTO servicio_tareas (servicio_id, descripcion, completado, tecnico, fecha_completado, orden) VALUES (?,?,?,?,?,?)');
 
   db.transaction(() => {
-    updateServ.run(vehiculo_id, descripcion.trim(), kilometraje || null, tecnico?.trim(), estadoFinal, costo || 0, notas?.trim(), mecanico_id, req.params.id);
+    updateServ.run(vehiculo_id, descripcion.trim(), kilometraje || null, tecnico?.trim(), estadoFinal, costo || 0, notas?.trim(), mecanico_id, mon, tc, req.params.id);
     deleteItems.run(req.params.id);
     for (const it of items) {
       insertItem.run(req.params.id, it.tipo, it.descripcion, it.cantidad, it.precio_unitario);

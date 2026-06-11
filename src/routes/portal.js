@@ -12,6 +12,7 @@ const express   = require('express');
 const rateLimit = require('express-rate-limit');
 const db        = require('../db/database');
 const audit     = require('../lib/auditoria');
+const moneda    = require('../lib/moneda');
 
 const router = express.Router();
 
@@ -71,7 +72,7 @@ router.get('/', (req, res) => {
 
   // Ultimas 10 ordenes de cualquier vehiculo del cliente
   const ordenesRecientes = db.prepare(`
-    SELECT s.id, s.numero, s.descripcion, s.estado, s.fecha, s.costo,
+    SELECT s.id, s.numero, s.descripcion, s.estado, s.fecha, s.costo, s.moneda,
            v.placa, v.marca, v.modelo
     FROM   servicios s
     JOIN   vehiculos v ON s.vehiculo_id = v.id
@@ -118,7 +119,7 @@ router.get('/vehiculos/:id', (req, res) => {
 
   // -- Ordenes de servicio con mecanico y total de repuestos --
   const servicios = db.prepare(`
-    SELECT s.id, s.numero, s.descripcion, s.estado, s.fecha, s.costo,
+    SELECT s.id, s.numero, s.descripcion, s.estado, s.fecha, s.costo, s.moneda,
            s.kilometraje,
            u.nombre AS mecanico_nombre,
            COALESCE((
@@ -174,9 +175,11 @@ router.get('/vehiculos/:id', (req, res) => {
     return 0;
   });
 
-  // -- KPIs --
+  // -- KPIs (facturado separado por moneda: no se suman USD y CRC) --
   const ordenesCobradas   = servicios.filter(s => s.estado === 'Cobrada');
-  const total_facturado   = ordenesCobradas.reduce((acc, s) => acc + (s.costo || 0), 0);
+  const facturadoUsd      = ordenesCobradas.filter(s => (s.moneda || 'USD') !== 'CRC').reduce((acc, s) => acc + (s.costo || 0), 0);
+  const facturadoCrc      = ordenesCobradas.filter(s => s.moneda === 'CRC').reduce((acc, s) => acc + (s.costo || 0), 0);
+  const total_facturado   = moneda.fmtTotales(facturadoUsd, facturadoCrc);
   const ordenesPorFecha   = [...servicios].sort((a, b) => (b.fecha || '') > (a.fecha || '') ? 1 : -1);
   const ultima_visita     = ordenesPorFecha[0]?.fecha || null;
   const ordenesConKm      = servicios.filter(s => s.kilometraje);

@@ -57,7 +57,7 @@
       <div class="card-body d-flex align-items-center gap-3">
         <span class="stat-card__icon"><i class="bi bi-cash-coin"></i></span>
         <div>
-          <div class="stat-card__value">$<%= (kpis.total_facturado || 0).toFixed(2) %></div>
+          <div class="stat-card__value"><%= kpis.total_facturado || '$0.00' %></div>
           <div class="stat-card__label">Total facturado</div>
         </div>
       </div>
@@ -104,10 +104,10 @@
                 <span><i class="bi bi-speedometer2"></i> <%= ev.datos.kilometraje %> km</span>
                 <% } %>
                 <% var totalOrden = (ev.datos.costo || 0) + (ev.datos.total_repuestos || 0); %>
-                <span class="fw-semibold text-body"><i class="bi bi-cash"></i> $<%= totalOrden.toFixed(2) %></span>
+                <span class="fw-semibold text-body"><i class="bi bi-cash"></i> <%= simbolo(ev.datos.moneda) %><%= totalOrden.toFixed(2) %></span>
               <% } else { %>
                 <% if (ev.datos.total != null) { %>
-                <span class="fw-semibold text-body"><i class="bi bi-cash"></i> $<%= (ev.datos.total || 0).toFixed(2) %></span>
+                <span class="fw-semibold text-body"><i class="bi bi-cash"></i> <%= simbolo(ev.datos.moneda) %><%= (ev.datos.total || 0).toFixed(2) %></span>
                 <% } %>
                 <a href="/portal/cotizaciones/<%= ev.datos.id %>/pdf" target="_blank" class="btn btn-sm btn-outline-info">
                   <i class="bi bi-file-earmark-pdf"></i> Ver PDF

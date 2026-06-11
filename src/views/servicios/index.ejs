@@ -83,7 +83,7 @@
             </td>
             <td class="d-none d-lg-table-cell"><%= s.tecnico || '-' %></td>
             <% if (!esMecanico) { %>
-            <td class="d-none d-md-table-cell text-end text-nowrap">$<%= (s.costo || 0).toFixed(2) %></td>
+            <td class="d-none d-md-table-cell text-end text-nowrap"><%= simbolo(s.moneda) %><%= (s.costo || 0).toFixed(2) %></td>
             <% } %>
             <td>
               <span class="badge bg-<%= badgeEstado(s.estado) %>"><%= s.estado %></span>

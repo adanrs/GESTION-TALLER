@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return recalc;
 
     function recalc() {
-      const sim = config.useCurrency ? getSimbolo(getMoneda()) : '$';
+      const sim = getSimbolo(getMoneda());
       let subtotal = 0;
       tbody.querySelectorAll(config.rowClass).forEach(row => {
         const cant = parseFloat(row.querySelector(config.cantName).value) || 0;
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         const totalEl = document.getElementById(config.totalId);
-        if (totalEl) totalEl.textContent = '$' + subtotal.toFixed(2);
+        if (totalEl) totalEl.textContent = sim + subtotal.toFixed(2);
       }
     }
   }
@@ -79,10 +79,24 @@ document.addEventListener('DOMContentLoaded', () => {
     precioName: '[name="det_precio"]', subCell: '.subtotal-cell', useCurrency: true
   });
 
-  // Re-calc on currency/TC/IVA change
+  // Servicios - items
+  const recalcItems = setupDynamicTable({
+    btnId: 'btn-agregar-item', tbodyId: 'items-body', tmplId: 'tmpl-item',
+    totalId: 'total-items', removeBtn: '.btn-quitar-item', calcClass: 'item-calc',
+    rowClass: '.fila-item', cantName: '[name="item_cantidad"]',
+    precioName: '[name="item_precio"]', subCell: '.item-subtotal', useCurrency: false
+  });
+
+  // Re-calc on currency/TC/IVA change (cotizaciones y servicios)
   ['select-moneda', 'input-tc', 'input-iva-pct', 'chk-iva'].forEach(id => {
     const el = document.getElementById(id);
-    if (el && recalcCot) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', recalcCot);
+    if (!el) return;
+    el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => {
+      if (recalcCot) recalcCot();
+      if (recalcItems) recalcItems();
+      const simCosto = document.getElementById('simbolo-costo');
+      if (simCosto) simCosto.textContent = getSimbolo(getMoneda());
+    });
   });
 
   // Toggle IVA % visibility
@@ -94,11 +108,56 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle();
   }
 
-  // Servicios - items
-  setupDynamicTable({
-    btnId: 'btn-agregar-item', tbodyId: 'items-body', tmplId: 'tmpl-item',
-    totalId: 'total-items', removeBtn: '.btn-quitar-item', calcClass: 'item-calc',
-    rowClass: '.fila-item', cantName: '[name="item_cantidad"]',
-    precioName: '[name="item_precio"]', subCell: '.item-subtotal', useCurrency: false
-  });
+  // Conversion de montos al cambiar la moneda (cotizaciones y servicios).
+  // La moneda indica en que estan expresados los precios; si ya hay montos
+  // digitados se ofrece convertirlos con el T.C. y si no, se avisa que los
+  // numeros quedan igual.
+  const selMonedaConv = document.getElementById('select-moneda');
+  if (selMonedaConv) {
+    let monedaPrev = selMonedaConv.value;
+
+    const mostrarAviso = (tipo, msg) => {
+      const aviso = document.getElementById('aviso-moneda');
+      if (!aviso) return;
+      aviso.classList.remove('d-none', 'alert-warning', 'alert-success');
+      aviso.classList.add(tipo === 'ok' ? 'alert-success' : 'alert-warning');
+      aviso.textContent = msg;
+    };
+
+    selMonedaConv.addEventListener('change', () => {
+      const nueva = selMonedaConv.value;
+      if (nueva === monedaPrev) return;
+      const anterior = monedaPrev;
+      monedaPrev = nueva;
+
+      // Campos con precios: items de servicios, detalles de cotizacion y mano de obra
+      const campos = Array.prototype.slice.call(
+        document.querySelectorAll('[name="item_precio"], [name="det_precio"]')
+      );
+      const costoMO = document.getElementById('srv-costo');
+      if (costoMO) campos.push(costoMO);
+
+      const hayMontos = campos.some(c => (parseFloat(c.value) || 0) > 0);
+      if (!hayMontos) return;
+
+      const tc = getTC();
+      if (!(tc > 0)) {
+        mostrarAviso('warn', 'Sin tipo de cambio valido: los montos NO se convirtieron, quedan con los mismos numeros pero expresados en ' + nueva + '.');
+        return;
+      }
+
+      const aCRC = nueva === 'CRC';
+      if (confirm('Convertir los montos de ' + anterior + ' a ' + nueva + ' usando el T.C. ' + tc + '?')) {
+        campos.forEach(c => {
+          const v = parseFloat(c.value) || 0;
+          if (v > 0) c.value = (aCRC ? v * tc : v / tc).toFixed(2);
+        });
+        mostrarAviso('ok', 'Montos convertidos de ' + anterior + ' a ' + nueva + ' con T.C. ' + tc + '. Revisa los valores y guarda para aplicar.');
+      } else {
+        mostrarAviso('warn', 'Los montos NO se convirtieron: los numeros quedan igual pero ahora expresados en ' + nueva + '.');
+      }
+      if (recalcCot) recalcCot();
+      if (recalcItems) recalcItems();
+    });
+  }
 });

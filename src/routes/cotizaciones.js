@@ -752,13 +752,15 @@ router.post('/:id/convertir', (req, res) => {
   let nuevoServicioId;
   db.transaction(() => {
     const r = db.prepare(
-      'INSERT INTO servicios (vehiculo_id, numero, descripcion, estado, costo) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO servicios (vehiculo_id, numero, descripcion, estado, costo, moneda, tipo_cambio) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run(
       cot.vehiculo_id,
       folio,
       `Generada desde cotizacion ${cot.numero}`,
       'Pendiente',
-      0
+      0,
+      cot.moneda || 'USD',
+      cot.tipo_cambio || 0
     );
     nuevoServicioId = r.lastInsertRowid;
 

@@ -228,6 +228,9 @@ ensureColumn('clientes', 'activo', 'INTEGER DEFAULT 1');
 ensureColumn('vehiculos', 'activo', 'INTEGER DEFAULT 1');
 // Folio legible de la orden de servicio (OT-YYYYNNNN)
 ensureColumn('servicios', 'numero', 'TEXT');
+// Multimoneda en ordenes de servicio (USD/CRC) con tipo de cambio congelado al crear/editar
+ensureColumn('servicios', 'moneda', "TEXT DEFAULT 'USD'");
+ensureColumn('servicios', 'tipo_cambio', 'REAL DEFAULT 0');
 // Vincula una cuenta de usuario al registro de cliente (portal del cliente)
 ensureColumn('usuarios', 'cliente_id', 'INTEGER');
 db.exec('CREATE INDEX IF NOT EXISTS idx_usuarios_cliente ON usuarios(cliente_id)');
