@@ -249,7 +249,8 @@ if (userCount === 0) {
 const configCount = db.prepare('SELECT COUNT(*) as count FROM configuracion').get().count;
 if (configCount === 0) {
   const configs = [
-    ['moneda', 'USD'],
+    // Moneda principal del taller: colones (CRC); USD es la secundaria
+    ['moneda', 'CRC'],
     ['tipo_cambio_crc', '515'],
     ['nombre_taller', 'Mi Taller Mecanico'],
     ['telefono_taller', ''],
